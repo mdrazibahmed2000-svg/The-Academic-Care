@@ -193,7 +193,8 @@ function loadStudentDashboard(studentId){
 function changeAdminPassword(){
   var newPassword = prompt("Enter new admin password:");
   if(!newPassword) return alert("⚠️ Cannot be empty");
-  database.ref('settings/adminPassword').set(newPassword, function(){
-    alert("✅ Password updated!");
+  database.ref('settings/adminPassword').set(newPassword, function(error){
+    if(error) alert("❌ Failed to update password: " + error);
+    else alert("✅ Admin password updated!");
   });
 }

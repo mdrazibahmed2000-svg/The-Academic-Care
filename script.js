@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 // RTDB Imports
-import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
 // --- Global Firebase and App Configuration ---
 
@@ -12,7 +12,6 @@ const firebaseConfig = {
     databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", 
     projectId: "the-academic-care",
     storageBucket: "the-academic-care.firebasestorage.app",
-    messagingSenderId: "728354914429",
     appId: "1:728354914429:web:9fe92ca6476baf6af2f114"
 };
 
@@ -23,11 +22,8 @@ let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
 
-// 🛑 CRITICAL UPDATE: SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
-// Examples: 
-// If data is at the root: const RTDB_ROOT_PATH = '';
-// If data is under /appData/: const RTDB_ROOT_PATH = 'appData';
-const RTDB_ROOT_PATH = ''; 
+// 🛑 CRITICAL: SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
+const RTDB_ROOT_PATH = ''; // Change to 'appData' if your data is nested under /appData/
 
 
 // Function to safely initialize Firebase and handle authentication
@@ -58,7 +54,7 @@ async function initializeAppAndAuth() {
     }
 }
 
-// Helper functions for RTDB References (now using the configurable path)
+// Helper functions for RTDB References
 function getStudentsRef() {
     return ref(db, `${RTDB_ROOT_PATH}/students`);
 }
@@ -71,9 +67,7 @@ function getFeesRef(studentId) {
 function getStudentRef(studentId) {
     return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}`);
 }
-function getCounterRef() {
-    return ref(db, `${RTDB_ROOT_PATH}/counters/studentRoll`);
-}
+// Removed getCounterRef
 
 // --- View Switching Logic (Remains the same) ---
 
@@ -218,7 +212,7 @@ async function handleStudentLogin(studentId) {
     localStorage.setItem('isAdmin', 'false');
     await initializeStudentPanel(currentStudentData);
     showDashboard(false);
-    console.log("Student Login Successful:", studentId);
+    console.log("Student Login Successful");
 }
 
 window.logout = function () {
@@ -230,54 +224,49 @@ window.logout = function () {
     showLogin();
 }
 
-// --- Registration Logic (RTDB Transaction) ---
+// --- Registration Logic (No Guardian Name) ---
 
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
-    const guardianName = document.getElementById('regGuardianName').value.trim();
-    const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
-    const studentClass = document.getElementById('regClass').value;
+    const guardianPhone = document.getElementById('regGuardianPhone').value.trim(); // <-- No Guardian Name input
+    const studentClass = document.getElementById('regClass').value.trim();
+    const studentRoll = document.getElementById('regRoll').value.trim(); 
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
-    if (!name || !guardianName || !guardianPhone || !studentClass) {
-        errorElement.textContent = 'Please fill in all fields.';
+    // NOTE: Removed 'guardianName' from this check
+    if (!name || !guardianPhone || !studentClass || !studentRoll) {
+        errorElement.textContent = 'Please fill in all required fields (Name, Class, Roll, Phone).';
         return;
     }
+    
+    // --- Create Unique Student ID based on Year, Class, and Roll ---
+    const rollString = studentRoll.padStart(3, '0');
+    const year = new Date().getFullYear().toString().substring(2);
+    const classId = studentClass.padStart(2, '0');
+    const newId = `S${year}${classId}${rollString}`; 
 
     try {
-        // RTDB Transaction to safely increment the roll number
-        const newStudentIdResult = await runTransaction(getCounterRef(), (currentData) => {
-            let nextRoll = 1;
-            // Check if data exists and has a numeric 'roll' property
-            if (currentData && typeof currentData.roll === 'number') { 
-                nextRoll = currentData.roll + 1;
-            }
-            return { roll: nextRoll }; // Returns the data to be saved to the database
+        // Check if a student with this generated ID already exists
+        const existingStudent = await get(getStudentRef(newId));
+        if (existingStudent.exists()) {
+            errorElement.textContent = `A student with ID ${newId} already exists. Check Roll/Class or contact Admin.`;
+            return;
+        }
+
+        // RTDB Set: Write the new student record
+        await set(getStudentRef(newId), {
+            name: name,
+            // Removed guardianName from the saved data
+            guardianPhone: guardianPhone,
+            class: studentClass,
+            roll: studentRoll,
+            status: 'pending',
+            registeredAt: Date.now()
         });
 
-        if (newStudentIdResult.committed) {
-            const nextRoll = newStudentIdResult.snapshot.val().roll;
-            const rollString = nextRoll.toString().padStart(3, '0');
-            const year = new Date().getFullYear().toString().substring(2);
-            const classId = studentClass.padStart(2, '0');
-            const newId = `S${year}${classId}${rollString}`;
-
-            // RTDB Set: Write the new student record
-            await set(getStudentRef(newId), {
-                name: name,
-                guardianName: guardianName,
-                guardianPhone: guardianPhone,
-                class: studentClass,
-                status: 'pending',
-                registeredAt: Date.now()
-            });
-
-            alert(`Registration successful! Your Student ID is ${newId}. Please wait for admin approval.`);
-            showLogin();
-        } else {
-            throw new Error("Counter transaction failed to commit (Aborted or blocked by rules).");
-        }
+        alert(`Registration successful! Your Student ID is ${newId}. Please wait for admin approval.`);
+        showLogin();
 
     } catch (e) {
         console.error("Registration failed: ", e);
@@ -285,7 +274,7 @@ window.registerStudent = async function () {
     }
 }
 
-// --- Student Panel Logic (RTDB) ---
+// --- Student Panel Logic and Admin Panel Logic (RTDB) ---
 
 async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;
@@ -334,8 +323,6 @@ function renderFeeStatus(fees, ulElement) {
         ulElement.appendChild(li);
     }
 }
-
-// --- Admin Panel Logic (RTDB) ---
 
 async function initializeAdminPanel() {
     // RTDB Listener for pending students
@@ -469,7 +456,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
             <div class="fee-actions">
                 ${!isPaid ? `<button class="mark-paid-btn" onclick="openPaymentModal('${studentId}', '${monthKey}', '${monthName}')">Mark Paid</button>` : ''}
                 <button class="break-btn" onclick="markBreak('${studentId}', '${monthKey}', '${monthName}', '${status}')">Mark Break</button>
-                ${status !== 'paid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="handleDraftCommunication('${studentId}', '${monthName}', '${status}', '${studentData.guardianName}', '${studentData.guardianPhone}')">Draft Comm. ✨</button>` : ''}
+                ${status !== 'paid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="handleDraftCommunication('${studentId}', '${monthName}', '${status}', '${studentData.name}', '${studentData.guardianPhone}')">Draft Comm. ✨</button>` : ''}
             </div>
         `;
         ulElement.appendChild(li);
@@ -518,7 +505,7 @@ window.markBreak = async function (studentId, monthKey, monthName, currentStatus
     }
 }
 
-// --- Gemini API Logic and Utility Functions (These were not dependent on database type) ---
+// --- Gemini API Logic and Utility Functions ---
 
 async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId) {
     // 🛑 IMPORTANT: REPLACE THE EMPTY STRING WITH YOUR ACTUAL GEMINI API KEY 🛑
@@ -603,12 +590,13 @@ window.handleStudentQuery = async function () {
 }
 
 
-window.handleDraftCommunication = async function (studentId, monthName, status, guardianName, guardianPhone) {
+window.handleDraftCommunication = async function (studentId, monthName, status, studentName, guardianPhone) {
     document.getElementById('communicationModal').classList.remove('hidden');
 
     document.getElementById('draftedCommunication').value = '';
 
-    const userPrompt = `Draft a professional and polite communication message (suitable for SMS or email body) for a guardian. Student ID: ${studentId}, Guardian Name: ${guardianName}. The issue is the fee for the month of ${monthName} is currently marked as: ${status}. The guardian's phone number is: ${guardianPhone}. Use a respectful tone.`;
+    // Updated the prompt to use studentName instead of guardianName
+    const userPrompt = `Draft a professional and polite communication message (suitable for SMS or email body) for a guardian. Student Name: ${studentName}, Student ID: ${studentId}. The issue is the fee for the month of ${monthName} is currently marked as: ${status}. The guardian's phone number is: ${guardianPhone}. Use a respectful tone.`;
 
     const systemPrompt = "You are a school administrator drafting a polite, formal reminder or notification to a guardian regarding a student's fee status. Keep the message concise (under 5 sentences) and clear. Do not include salutations or closings, just the message body.";
 

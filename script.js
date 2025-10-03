@@ -1,4 +1,4 @@
-// --- COMPLETE, FINAL, AND CORRECTED script.js ---
+// --- COMPLETE, FINAL, AND CORRECTED script.js (with Break System and Colors) ---
 
 // Firebase config (Use your actual configuration)
 var firebaseConfig = {
@@ -17,6 +17,14 @@ firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
 var auth = firebase.auth(); 
 var currentStudent = "";
+
+// Utility function to get the correct CSS class for status
+function getStatusClass(status) {
+    if (status === "paid") return "status-paid";
+    if (status === "unpaid") return "status-unpaid";
+    if (status === "break") return "status-break";
+    return "";
+}
 
 // UI Functions
 function showRegister() {
@@ -118,7 +126,6 @@ function login() {
             document.getElementById("login-page").classList.add("hidden");
             document.getElementById("dashboard").classList.remove("hidden");
             
-            // The student dashboard header is now set inside loadStudentDashboard
             loadStudentDashboard(id); 
         } else {
             document.getElementById("loginError").innerText = "❌ Invalid ID!";
@@ -126,7 +133,7 @@ function login() {
     });
 }
 
-// Admin Panel Functions (Require auth check)
+// Admin Panel Functions
 function loadAdminPanel() {
     if (!auth.currentUser) return logout();
     database.ref('students').once('value').then(function(snapshot) {
@@ -185,7 +192,7 @@ function loadStudentFeesDropdown() {
     });
 }
 
-// Admin Fee Management Display - Chronological and Structured for CSS
+// Admin Fee Management Display - Chronological, Mark Paid/Break Buttons and Colors
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
@@ -193,7 +200,6 @@ function loadStudentFees(studentId) {
         return;
     }
     
-    // Define the chronological order of the months
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
         "July", "August", "September", "October", "November", "December"
@@ -205,12 +211,28 @@ function loadStudentFees(studentId) {
         var html = '';
         var fees = snapshot.val();
         
-        // Iterate over the chronological array
         chronologicalMonths.forEach(function(month) {
             if (fees.hasOwnProperty(month)) {
                 var status = fees[month];
-                // Added class="fee-item" for CSS to place the button correctly
-                html += '<li class="fee-item">' + month + ': ' + status + ' <button class="mark-paid-btn" onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';
+                var statusClass = getStatusClass(status);
+                
+                // Set the status text to be colored
+                var statusText = `<span class="${statusClass}">${status}</span>`;
+
+                // Add both Mark Paid and Mark Break buttons
+                html += '<li class="fee-item">' + month + ': ' + statusText + ' ';
+                
+                // Only show buttons if not already on a break status
+                if(status !== 'break') {
+                    html += `<button class="break-btn" onclick="markMonthBreak('${studentId}','${month}')">Mark Break</button>`;
+                }
+                
+                // Only show Mark Paid button if not paid or on break
+                if(status !== 'paid' && status !== 'break') {
+                    html += `<button class="mark-paid-btn" onclick="markMonthPaid('${studentId}','${month}')">Mark Paid</button>`;
+                }
+
+                html += '</li>';
             }
         });
 
@@ -225,14 +247,22 @@ function markMonthPaid(studentId, month) {
     });
 }
 
-// Student Dashboard Display - Chronological, Current Month Limit, and New Header Format
+// NEW FUNCTION: Mark Month as Break
+function markMonthBreak(studentId, month) {
+    if (!auth.currentUser) return logout();
+    database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
+        loadStudentFees(studentId);
+    });
+}
+
+
+// Student Dashboard Display - Chronological, Current Month Limit, New Header, and Colors
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
         "July", "August", "September", "October", "November", "December"
     ];
     
-    // Get the current month index (0=Jan, 11=Dec)
     var currentDate = new Date();
     var currentMonthIndex = currentDate.getMonth(); 
     
@@ -261,7 +291,9 @@ function loadStudentDashboard(studentId) {
             
             if (fees.hasOwnProperty(month)) {
                 var status = fees[month];
-                feesHTML += '<li>' + month + ': ' + status + '</li>';
+                var statusClass = getStatusClass(status); // Get color class
+                
+                feesHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + '</span></li>';
             }
         }
         

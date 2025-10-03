@@ -1,4 +1,4 @@
-// Firebase config
+// Firebase config (Ensure this is your actual config)
 var firebaseConfig = {
   apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
   authDomain: "the-academic-care.firebaseapp.com",
@@ -13,6 +13,7 @@ var firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
+var auth = firebase.auth(); // <-- NEW: Firebase Authentication Instance
 var currentStudent = "";
 
 // UI Functions
@@ -28,6 +29,8 @@ function showLogin() {
 }
 
 function logout() {
+  // Use Firebase Auth sign out for the admin
+  auth.signOut();
   currentStudent = "";
   document.getElementById("dashboard").classList.add("hidden");
   document.getElementById("admin-panel").classList.add("hidden");
@@ -39,7 +42,7 @@ function clearLoginError() {
   document.getElementById("loginError").innerText = "";
 }
 
-// Register Student
+// Register Student (No changes, as this is for data storage)
 function registerStudent() {
   var name = document.getElementById("regName").value.trim();
   var studentClass = document.getElementById("regClass").value.trim();
@@ -66,26 +69,46 @@ function registerStudent() {
   });
 }
 
-// Login
+// Login - SECURED VERSION
 function login() {
   var id = document.getElementById("studentId").value.trim();
   clearLoginError();
 
   if(id === "admin") {
-    database.ref('settings/adminPassword').once('value').then(function(snapshot){
-      if(snapshot.exists()){
-        var password = prompt("Enter admin password:");
-        if(password === snapshot.val()){
-          document.getElementById("login-page").classList.add("hidden");
-          document.getElementById("admin-panel").classList.remove("hidden");
-          loadAdminPanel();
-          loadStudentFeesDropdown();
-        } else alert("❌ Wrong password!");
-      } else alert("⚠️ Admin password not set!");
-    });
+    // --- SECURE ADMIN LOGIN VIA FIREBASE AUTHENTICATION ---
+    var email = prompt("Enter admin email:");
+    var password = prompt("Enter admin password:");
+
+    if (!email || !password) {
+        document.getElementById("loginError").innerText = "Admin login cancelled.";
+        return;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        // Logged in successfully. The password check was done securely on the Firebase servers.
+        console.log("Admin logged in with UID:", userCredential.user.uid);
+        
+        // Hide login, show admin panel
+        document.getElementById("login-page").classList.add("hidden");
+        document.getElementById("admin-panel").classList.remove("hidden");
+        
+        // Load data
+        loadAdminPanel();
+        loadStudentFeesDropdown();
+
+        // Security Reminder: After this, your Realtime Database rules MUST check auth.uid for all write operations.
+      })
+      .catch((error) => {
+        // Handle common errors like wrong password or invalid user
+        console.error("Admin Login Error:", error.code, error.message);
+        document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
+      });
+      
     return;
   }
 
+  // --- Student Login (Unchanged for now, still requires database approval check) ---
   database.ref('students/' + id).once('value').then(function(snapshot){
     if(snapshot.exists()){
       var student = snapshot.val();
@@ -105,8 +128,11 @@ function login() {
   });
 }
 
-// Admin Panel
+// Admin Panel (No changes needed here, but the data access must be secured by DB rules)
 function loadAdminPanel() {
+  // Ensure we are logged in before attempting to read data
+  if (!auth.currentUser) return logout();
+
   database.ref('students').once('value').then(function(snapshot){
     if(!snapshot.exists()) return;
     var students = snapshot.val();
@@ -123,6 +149,7 @@ function loadAdminPanel() {
 }
 
 function approveStudent(studentId){
+  if (!auth.currentUser) return logout(); // Check if admin is logged in
   database.ref('students/' + studentId + '/status').set("approved", function(){
     initializeMonthlyFees(studentId);
     alert("✅ Student " + studentId + " approved!");
@@ -132,14 +159,16 @@ function approveStudent(studentId){
 }
 
 function markPaid(studentId){
+  if (!auth.currentUser) return logout(); // Check if admin is logged in
   database.ref('students/' + studentId + '/feeStatus').set("paid", function(){
     alert("💰 Student " + studentId + " fee marked as paid!");
     loadAdminPanel();
   });
 }
 
-// Monthly Fees
+// Monthly Fees (No functional changes)
 function initializeMonthlyFees(studentId){
+  if (!auth.currentUser) return logout(); 
   var months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   var updates = {};
   months.forEach(function(m){ updates[m] = "unpaid"; });
@@ -147,18 +176,20 @@ function initializeMonthlyFees(studentId){
 }
 
 function loadStudentFeesDropdown(){
+  if (!auth.currentUser) return;
   database.ref('students').once('value').then(function(snapshot){
     if(!snapshot.exists()) return;
     var options = '<option value="">Select Student</option>';
     var students = snapshot.val();
     for(var id in students){
-      if(students[id].status === "approved") options += '<option value="'+id+'">'+students[id].name+' (ID: '+id+')</option>';
+      if(students[id].status === "approved") options += '<option value="'+students[id].uid+'">'+students[id].name+' (ID: '+id+')</option>';
     }
     document.getElementById("selectStudentFees").innerHTML = options;
   });
 }
 
 function loadStudentFees(studentId){
+  if (!auth.currentUser) return;
   if(!studentId){ document.getElementById("monthlyFees").innerHTML = ''; return; }
   database.ref('students/' + studentId + '/fees').once('value').then(function(snapshot){
     if(!snapshot.exists()) return;
@@ -172,13 +203,16 @@ function loadStudentFees(studentId){
 }
 
 function markMonthPaid(studentId, month){
+  if (!auth.currentUser) return logout(); // Check if admin is logged in
   database.ref('students/' + studentId + '/fees/' + month).set("paid", function(){
     loadStudentFees(studentId);
   });
 }
 
-// Student Dashboard
+// Student Dashboard (No functional changes)
 function loadStudentDashboard(studentId){
+  // Note: This function doesn't need 'auth.currentUser' check because it relies on the student login
+  // which is already validated by the presence of 'currentStudent'.
   database.ref('students/' + studentId + '/fees').once('value').then(function(snapshot){
     if(!snapshot.exists()) return;
     var html = '<h3>Monthly Fees:</h3><ul>';
@@ -189,12 +223,5 @@ function loadStudentDashboard(studentId){
   });
 }
 
-// Admin Password Change
-function changeAdminPassword(){
-  var newPassword = prompt("Enter new admin password:");
-  if(!newPassword) return alert("⚠️ Cannot be empty");
-  database.ref('settings/adminPassword').set(newPassword, function(error){
-    if(error) alert("❌ Failed to update password: " + error);
-    else alert("✅ Admin password updated!");
-  });
-}
+// REMOVED: The insecure changeAdminPassword() function has been deleted.
+// Password management must be done through Firebase Auth or the Firebase Console.

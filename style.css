@@ -1,4 +1,4 @@
-/* --- COMPLETE AND FINAL style.css (with All Fixes and Collapsible Styling) --- */
+/* --- COMPLETE AND FINAL style.css --- */
 
 /* General Body and Page Structure */
 body {
@@ -42,6 +42,7 @@ h3 {
 
 /* --- COLLAPSIBLE SECTION STYLING --- */
 
+/* Targets the H3 elements used as clickable headers */
 .collapsible-header {
     cursor: pointer;
     margin-top: 15px !important;
@@ -54,13 +55,14 @@ h3 {
 }
 
 .profile-header {
-    text-align: center; /* Center the 'My Profile' header */
+    text-align: center; 
 }
 
 .fees-header {
-    text-align: left; /* Keep 'Tuition Fee Status' left-aligned */
+    text-align: left; 
 }
 
+/* Targets the DIV elements that contain the content */
 .collapsible-content {
     border: 1px solid #ddd;
     border-top: none;
@@ -182,9 +184,9 @@ li {
 
 /* --- Student Dashboard Header Styling --- */
 
-/* Targets the main title for "The Academic Care" (Fixed for mobile) */
+/* Targets the main title for "The Academic Care" (Mobile fix applied here) */
 #studentName h2 {
-    font-size: 1.4em; /* Decreased size to ensure single line on mobile */
+    font-size: 1.4em; 
     font-weight: bold;
     color: #0056b3;
     margin-bottom: 5px;

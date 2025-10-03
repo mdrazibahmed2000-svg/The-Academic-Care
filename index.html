@@ -3,461 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Care Fee Management</title>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
+    <title>Academic Care - Tuition Management</title>
+    <!-- Load Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- IMPORTANT: Paste the content of 'tuition_styles.css' into the <style> block below to apply styling -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-        /* CSS Variables for theming */
-        :root {
-            --primary-color: #007bff; /* Blue */
-            --primary-hover: #0056b3;
-            --secondary-color: #6c757d; /* Gray */
-            --background-color: #f8f9fa; /* Light Gray */
-            --card-background: #ffffff; /* White */
-            --border-color: #dee2e6;
-            /* Updated Colors for Status Visibility */
-            --success-color: #1E8449; /* Vibrant Green (Paid) */
-            --danger-color: #C0392B; /* Strong Red (Unpaid) */
-            --warning-color: #F39C12; /* Distinct Orange (Break) */
-        }
-
-        /* General Body and Page Structure */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding-top: 20px;
-        }
-
-        .page {
-            background-color: var(--card-background);
-            padding: 25px;
-            margin: 0 10px 20px 10px;
-            border-radius: 12px;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-            width: 100%;
-            max-width: 450px;
-            box-sizing: border-box;
-        }
-
-        /* Hides content by default, used for collapsible sections and Modals */
-        .hidden {
-            display: none !important;
-        }
-
-        /* Headings */
-        h2 {
-            color: var(--primary-color);
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        h3 {
-            margin-top: 20px;
-            color: #333;
-            font-size: 1.3em;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 5px;
-        }
-
-        /* --- COLLAPSIBLE SECTION STYLING --- */
-
-        .collapsible-header {
-            cursor: pointer;
-            margin-top: 15px !important;
-            background-color: #e9ecef;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            font-size: 1.1em;
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .collapsible-content {
-            border: 1px solid var(--border-color);
-            border-top: none;
-            padding: 15px;
-            border-radius: 0 0 8px 8px;
-            margin-bottom: 15px;
-            background-color: #f8f9fa;
-        }
-
-        .collapsible-content p {
-            font-size: 1em;
-            margin: 5px 0;
-            color: #333;
-        }
-
-        /* Form Elements and Inputs */
-        input[type="text"],
-        input[type="number"],
-        input[type="email"],
-        input[type="password"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-
-        /* Generic Button Styling */
-        button {
-            width: 100%;
-            padding: 12px 15px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 6px;
-            color: #fff;
-            background-color: var(--success-color);
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: background-color 0.3s ease, box-shadow 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        button:hover {
-            background-color: #1e7e34;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* --- FIX: Button Color Visibility --- */
-        #loginForm button {
-            background-color: var(--primary-color); /* Login button is Blue */
-        }
-
-        #loginForm button:hover {
-            background-color: var(--primary-hover);
-        }
-
-        #initialView > button:last-of-type {
-            background-color: var(--success-color); /* Register button is Green */
-        }
-
-        #initialView > button:last-of-type:hover {
-            background-color: #1e7e34;
-        }
-        /* --- END FIX --- */
-
-        /* Error Messages */
-        .error {
-            color: var(--danger-color);
-            text-align: center;
-            margin: 15px 0;
-            font-weight: bold;
-        }
-
-        /* List Styling (Admin and Student Fees) */
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        li {
-            background-color: #e9f7e9;
-            padding: 12px;
-            border-bottom: 1px solid #d4edda;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            font-size: 1em;
-            line-height: 1.4;
-        }
-
-        /* --- FEE STATUS COLOR CODING --- */
-        .status-paid {
-            color: var(--success-color);
-            font-weight: 700;
-        }
-
-        .status-unpaid {
-            color: var(--danger-color);
-            font-weight: 700;
-        }
-
-        .status-break {
-            color: var(--warning-color);
-            font-weight: 700;
-        }
-
-        /* --- ADMIN PANEL ALIGNMENT FIX --- */
-        #monthlyFees .fee-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            background-color: #f1f7f1;
-            flex-wrap: wrap; /* Allows content to wrap on smaller screens */
-        }
-
-        .fee-info {
-            flex: 1 1 50%; /* Take up space but allow wrapping */
-            padding-right: 10px;
-        }
-
-        .fee-actions {
-            display: flex;
-            gap: 5px;
-            flex: 1 1 auto;
-            justify-content: flex-end;
-            margin-top: 5px; /* Add margin for mobile stacking */
-        }
-        
-        @media (min-width: 400px) {
-            .fee-actions {
-                margin-top: 0;
-            }
-        }
-
-        .fee-item button {
-            width: auto;
-            padding: 6px 10px;
-            margin: 0;
-            font-size: 13px;
-            flex-shrink: 0;
-        }
-
-        /* Mark Paid Button (Admin Panel) */
-        .fee-item .mark-paid-btn {
-            background-color: var(--primary-color);
-        }
-
-        .fee-item .mark-paid-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        /* Break Button Styling (Admin Panel) */
-        .fee-item .break-btn {
-            background-color: var(--warning-color);
-            color: #333;
-        }
-
-        .fee-item .break-btn:hover {
-            background-color: #e0a800;
-        }
-
-        .fee-details {
-            display: block;
-            font-size: 0.85em;
-            color: #555;
-            margin-top: 3px;
-        }
-        /* --- END ADMIN PANEL ALIGNMENT FIX --- */
-
-        /* --- Gemini Feature Styling --- */
-        #gemini-query-section {
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #e6f7ff;
-            border: 1px solid #b3e0ff;
-            border-radius: 8px;
-        }
-
-        #geminiResponse {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            font-size: 0.9em;
-            min-height: 50px;
-        }
-
-        /* Loader */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            margin: 10px auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Modal Styling */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-content h3 {
-            margin-top: 0;
-            border-bottom: 2px solid var(--primary-color);
-        }
-
-        #draftedCommunication {
-            width: 100%;
-            height: 200px;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            box-sizing: border-box;
-            resize: vertical;
-            font-family: monospace;
-            background-color: #f4f4f4;
-        }
-
-        .close-button {
-            background-color: var(--danger-color) !important;
-            margin-top: 15px;
-        }
-
-        .close-button:hover {
-            background-color: #c82333 !important;
-        }
+        /* CSS CONTENT GOES HERE */
     </style>
 </head>
 <body>
-    <div class="page">
-        <!-- Main Application View -->
-        <div id="appContainer">
 
-            <!-- 1. Initial Login/Registration View (Visible on Start) -->
-            <div id="initialView">
-                <h2>Login / Student ID</h2>
+<div id="loading-overlay" class="loading-overlay">Initializing App...</div>
 
-                <!-- Login Form -->
-                <div id="loginForm">
-                    <input type="text" id="loginId" placeholder="Enter Student ID or 'admin'">
-                    <input type="password" id="loginPassword" placeholder="Admin Password (if 'admin')">
-                    <button onclick="login()">Login</button>
-                    <div class="error" id="loginError"></div>
-                </div>
+<!-- Login Page -->
+<div id="login-page" class="page flex flex-col space-y-4 hidden">
+    <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Academic Care</h2>
+    <p class="text-sm text-center text-gray-500">Tuition Fee Management</p>
+    <input type="text" id="studentIdInput" placeholder="Enter Student ID (e.g., S1001) or 'admin'"
+           class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+    <button onclick="login()"
+            class="bg-[#00a896] hover:bg-[#008f80] text-white font-semibold p-3 rounded-lg shadow-md transition duration-200">
+        Login
+    </button>
+    <button onclick="showRegister()"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold p-3 rounded-lg transition duration-200">
+        New Student? Register
+    </button>
+    <p id="loginError" class="error text-center"></p>
+</div>
 
-                <!-- Registration Button -->
-                <button onclick="showRegister()">New Student? Register Here</button>
-            </div>
+<!-- Registration Page -->
+<div id="register-page" class="page flex flex-col space-y-4 hidden">
+    <h2 class="text-2xl font-semibold text-gray-800">Student Registration</h2>
+    <form id="registerForm" class="flex flex-col space-y-3" onsubmit="event.preventDefault(); registerStudent();">
+        <input type="text" id="regName" placeholder="Full Name" required
+               class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+        <input type="number" id="regClass" placeholder="Class (e.g., 10)" required
+               class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+        <input type="number" id="regRoll" placeholder="Roll Number (e.g., 5)" required
+               class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+        <input type="text" id="regGuardian" placeholder="Guardian Mobile No (10 digits)" required
+               class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+        <button type="submit"
+                class="bg-[#00a896] hover:bg-[#008f80] text-white font-semibold p-3 rounded-lg shadow-md transition duration-200 mt-2">
+            Submit for Approval
+        </button>
+        <p id="registerMessage" class="text-sm text-center text-gray-600"></p>
+    </form>
+    <button onclick="showLogin()"
+            class="text-sm text-gray-600 hover:text-[#00a896] transition duration-200">
+        &larr; Back to Login
+    </button>
+</div>
 
-            <!-- 2. Registration Form (Initially Hidden) -->
-            <div id="registerView" class="hidden">
-                <h2>Student Registration</h2>
-                <input type="text" id="regName" placeholder="Full Name" required>
-                <input type="text" id="regGuardianName" placeholder="Guardian Name" required>
-                <input type="number" id="regGuardianPhone" placeholder="Guardian Phone (e.g., 017xxxx)" required>
-                <select id="regClass" required>
-                    <option value="">Select Class</option>
-                    <option value="1">Class 1</option>
-                    <option value="2">Class 2</option>
-                    <option value="3">Class 3</option>
-                    <option value="4">Class 4</option>
-                    <option value="5">Class 5</option>
-                </select>
-                <button onclick="registerStudent()">Register Student</button>
-                <div class="error" id="registerError"></div>
-                <button onclick="showLogin()">Back to Login</button>
-            </div>
+<!-- Student Dashboard -->
+<div id="dashboard" class="page flex flex-col space-y-6 hidden">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-[#00a896]">Welcome, <span id="studentName"></span></h2>
+        <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700">Logout</button>
+    </div>
+    <div class="p-4 bg-gray-50 rounded-lg">
+        <p class="text-sm font-medium text-gray-600 mb-2">Your ID: <span class="font-mono text-xs p-1 bg-gray-200 rounded" id="currentStudentId"></span></p>
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">Monthly Fees Status</h3>
+        <div id="studentFees" class="space-y-2">
+            <!-- Fee status will be injected here -->
+        </div>
+    </div>
+</div>
 
-            <!-- 3. Dashboard View (Initially Hidden - Used for both Student & Admin) -->
-            <div id="dashboardView" class="hidden">
-                <h2 id="welcomeHeader">Welcome!</h2>
-                <p id="authUserId" class="text-xs text-gray-500 mb-4"></p>
-                <button onclick="logout()">Logout</button>
-                
-                <!-- Student Dashboard Content -->
-                <div id="studentPanel">
-                    <h3>Your Profile</h3>
-                    <p><strong>Status:</strong> <span id="studentStatus"></span></p>
-                    <p><strong>Student ID:</strong> <span id="studentIdDisplay"></span></p>
-                    <p><strong>Class:</strong> <span id="studentClass"></span></p>
+<!-- Admin Panel -->
+<div id="admin-panel" class="page flex flex-col space-y-6 hidden">
+    <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-[#00a896]">Admin Panel</h2>
+        <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700">Logout</button>
+    </div>
 
-                    <h3>Tuition Fee Status (Current Year)</h3>
-                    <ul id="feeStatusList">
-                        <!-- Fee status will be populated here -->
-                    </ul>
+    <div class="border-t border-gray-200 pt-4">
+        <h3 class="text-xl font-semibold mb-2 text-gray-700">Pending Approvals</h3>
+        <ul id="pendingStudents" class="space-y-3">
+            <!-- Pending students will be injected here -->
+            <li class="text-gray-500 text-sm italic" id="noPending">No pending students.</li>
+        </ul>
+    </div>
 
-                    <!-- Gemini Feature for Student -->
-                    <div id="gemini-query-section">
-                        <h4>✨ Fee Policy Assistant</h4>
-                        <textarea id="geminiQuery" placeholder="Ask about late fees, payment plans, or specific policies..." rows="3"></textarea>
-                        <button onclick="handleStudentQuery()">Ask Assistant</button>
-                        <div id="geminiLoader" class="loader hidden"></div>
-                        <div id="geminiResponse">Response will appear here.</div>
-                    </div>
-                </div>
-                
-                <!-- Admin Panel Content -->
-                <div id="adminPanel" class="hidden">
-                    <h2>Admin Panel</h2>
-
-                    <!-- Pending Registrations Section -->
-                    <div class="collapsible-header" onclick="toggleCollapsible('pendingRegistrationsContent')">
-                        Pending Registrations <span id="pendingCount">(0)</span> <span>&#9660;</span>
-                    </div>
-                    <div id="pendingRegistrationsContent" class="collapsible-content hidden">
-                        <ul id="pendingStudentsList">
-                            <!-- Pending students populated here -->
-                            <p id="noPending" class="text-gray-500">No pending students</p>
-                        </ul>
-                    </div>
-                    
-                    <!-- Fee Management Section -->
-                    <h3>Manage Monthly Fees</h3>
-                    <select id="studentSelector" onchange="loadMonthlyFees()" class="mt-2">
-                        <option value="">Select Student...</option>
-                        <!-- Approved students populated here -->
-                    </select>
-
-                    <ul id="monthlyFees" class="mt-4">
-                        <!-- Monthly fee status for selected student populated here -->
-                    </ul>
-                </div>
+    <div class="border-t border-gray-200 pt-4">
+        <h3 class="text-xl font-semibold mb-2 text-gray-700">Approved Students</h3>
+        <select id="selectStudentFees" onchange="loadStudentFees(this.value)"
+                class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-[#00a896] focus:border-[#00a896]">
+            <option value="" disabled selected>Select student for fee management</option>
+        </select>
+        <div id="monthlyFeesContainer" class="p-3 bg-gray-50 rounded-lg">
+            <h4 class="text-lg font-medium text-gray-700 mb-2">Fee Records for: <span id="selectedStudentName"></span></h4>
+            <div id="monthlyFees" class="space-y-2 text-sm">
+                <p class="text-gray-500">Select a student above to view/manage fees.</p>
+                <!-- Monthly fee records will be injected here -->
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal for Admin Communication Draft -->
-    <div id="communicationModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h3>Draft Communication ✨</h3>
-            <p>Review and copy the message for the guardian:</p>
-            <textarea id="draftedCommunication" readonly></textarea>
-            <div id="communicationLoader" class="loader hidden"></div>
-            <button onclick="copyToClipboard('draftedCommunication')">Copy Message</button>
-            <button class="close-button" onclick="closeModal()">Close</button>
-        </div>
-    </div>
+<!-- Firebase SDK Imports (Modern v11+) and Application Logic -->
+<script type="module">
+    // FIREBASE IMPORTS MUST REMAIN HERE TO WORK CORRECTLY
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, setDoc, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // IMPORTANT: Paste the content of 'tuition_logic.js' below this line to add functionality
+
+    // JAVASCRIPT LOGIC GOES HERE
+
+</script>
+
 </body>
 </html>
+

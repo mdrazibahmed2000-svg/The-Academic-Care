@@ -3,16 +3,16 @@ import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence
 // RTDB Imports
 import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-// --- Global Firebase and App Configuration ---
+// --- Global Firebase and App Configuration (USING YOUR PROVIDED VALUES) ---
 
 const firebaseConfig = {
-    // 🛑 REPLACE THESE WITH YOUR ACTUAL CONFIGURATION DETAILS 🛑
-    apiKey: "YOUR_API_KEY_HERE", 
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "YOUR_DATABASE_URL_HERE", // e.g., https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    appId: "YOUR_APP_ID"
+    // 🛑 YOUR PROVIDED API KEYS & CONFIG 🛑
+    apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8", 
+    authDomain: "the-academic-care.firebaseapp.com",
+    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", 
+    projectId: "the-academic-care",
+    storageBucket: "the-academic-care.firebasestorage.app",
+    appId: "1:728354914429:web:9fe92ca6476baf6af2f114"
 };
 
 let app;
@@ -22,8 +22,8 @@ let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
 
-// 🛑 SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
-const RTDB_ROOT_PATH = ''; // Keep as '' if 'students' and 'admins' are at the root level
+// RTDB path is confirmed to be empty ('')
+const RTDB_ROOT_PATH = '';
 
 
 // Function to safely initialize Firebase and handle authentication
@@ -34,6 +34,7 @@ async function initializeAppAndAuth() {
         db = getDatabase(app); 
         auth = getAuth(app);
 
+        // Ensure session persistence is set before signing in
         await setPersistence(auth, browserSessionPersistence);
         
         // This is the line that requires Anonymous Auth to be ENABLED
@@ -50,9 +51,9 @@ async function initializeAppAndAuth() {
             }
         });
     } catch (error) {
-        // CRITICAL: If Firebase setup fails (e.g., bad config or disabled Anonymous Auth)
+        // This is the main error trap for "Firebase setup failed"
         console.error("Firebase initialization or authentication failed:", error);
-        document.getElementById('loginError').textContent = `System Error: Firebase setup failed. Check console (F12) and ensure config & Anonymous Auth are correct.`;
+        document.getElementById('loginError').textContent = `System Error: Firebase setup failed. Check console (F12) for details. (Ensure Anonymous Auth is enabled).`;
         showLogin(); 
     }
 }
@@ -82,7 +83,7 @@ window.showLogin = function () {
     // Show Login/Initial View
     document.getElementById('initialView').classList.remove('hidden');
     document.getElementById('registerView').classList.add('hidden');
-    document.getElementById('dashboardView').classList.add('hidden');
+    document.getElementById('dashboardView').classList.add('hidden'); // CRITICAL: This hides the dashboard
 }
 
 window.showRegister = function () {
@@ -145,7 +146,6 @@ async function checkLoginStatus() {
     }
 }
 
-// FIX: Improved error handling and explicit function calls
 window.login = async function () {
     const id = document.getElementById('loginId').value.trim();
     const errorElement = document.getElementById('loginError');
@@ -168,9 +168,8 @@ window.login = async function () {
             await handleStudentLogin(id);
         }
     } catch(e) {
-        // Generic catch for Firebase network/permission errors during login
         console.error("Login failed unexpectedly:", e);
-        errorElement.textContent = `Login failed. Check internet connection or admin setup. Error: ${e.message}`;
+        errorElement.textContent = `Login failed. Check internet connection or Admin setup. Error: ${e.message}`;
     }
 }
 
@@ -178,7 +177,7 @@ async function handleAdminLogin(password) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
     
-    // RTDB Query: Find admin record where 'password' matches the input.
+    // CRITICAL: The admin login relies on the 'password' field being indexed in your rules.
     const adminQuery = query(getAdminsRef(), orderByChild('password'), equalTo(password));
     const adminSnapshot = await get(adminQuery);
 
@@ -246,7 +245,7 @@ window.registerStudent = async function () {
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
-    // FIX: Stronger client-side validation for empty fields
+    // Stronger client-side validation
     if (!name || !guardianPhone || !studentClass || !studentRoll) {
         errorElement.textContent = 'Please fill in all required fields (Name, Class, Roll, Phone).';
         return;
@@ -286,13 +285,14 @@ window.registerStudent = async function () {
         showLogin();
 
     } catch (e) {
-        // FIX: Explicit error for registration failure
+        // Explicit error for registration failure
         console.error("Registration failed: ", e);
         errorElement.textContent = `Registration failed. Please try again. Possible Database/Permission issue. Error: ${e.message}`;
     }
 }
 
 // --- Student Panel Logic and Admin Panel Logic (RTDB) ---
+// (The rest of the code for panels, fees, and Gemini remains the same as it was previously correct.)
 
 async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;

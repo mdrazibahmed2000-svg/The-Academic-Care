@@ -8,7 +8,6 @@
 </head>
 <body>
 
-  <!-- Login Page -->
   <div id="login-page" class="page">
     <h2>Login</h2>
     <input type="text" id="studentId" placeholder="Enter Student ID or admin">
@@ -17,27 +16,24 @@
     <p id="loginError" class="error"></p>
   </div>
 
-  <!-- Registration Page -->
   <div id="register-page" class="page hidden">
     <h2>Student Registration</h2>
     <form id="registerForm" onsubmit="event.preventDefault(); registerStudent();">
-      <input type="text" id="regName" placeholder="Name">
-      <input type="number" id="regClass" placeholder="Class">
-      <input type="number" id="regRoll" placeholder="Roll">
-      <input type="text" id="regGuardian" placeholder="Guardian Mobile No">
+      <input type="text" id="regName" placeholder="Name" required>
+      <input type="number" id="regClass" placeholder="Class" required>
+      <input type="number" id="regRoll" placeholder="Roll" required>
+      <input type="text" id="regGuardian" placeholder="Guardian Mobile No" required>
       <button type="submit">Register</button>
     </form>
     <button onclick="showLogin()">Back to Login</button>
   </div>
 
-  <!-- Student Dashboard -->
   <div id="dashboard" class="page hidden">
     <h2 id="studentName"></h2>
     <div id="studentFees"></div>
     <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- Admin Panel -->
   <div id="admin-panel" class="page hidden">
     <h2>Admin Panel</h2>
 
@@ -51,15 +47,13 @@
     <select id="selectStudentFees" onchange="loadStudentFees(this.value)"></select>
     <ul id="monthlyFees"></ul>
 
-    <button onclick="changeAdminPassword()">Change Admin Password</button>
     <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- Firebase SDK (compat version, for your JS code) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 
-  <!-- Your JS (NOT as module) -->
   <script src="script.js"></script>
 </body>
 </html>

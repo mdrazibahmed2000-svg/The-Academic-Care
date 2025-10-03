@@ -1,4 +1,4 @@
-/* --- COMPLETE AND FINAL style.css (with All Fixes and Balanced Sizes) --- */
+/* --- COMPLETE AND FINAL style.css (with All Fixes and Collapsible Styling) --- */
 
 /* General Body and Page Structure */
 body {
@@ -40,7 +40,27 @@ h3 {
     font-size: 1.2em;
 }
 
-/* Styling for the collapsible content container */
+/* --- COLLAPSIBLE SECTION STYLING --- */
+
+.collapsible-header {
+    cursor: pointer;
+    margin-top: 15px !important;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px 4px 0 0;
+    border: 1px solid #ddd;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.profile-header {
+    text-align: center; /* Center the 'My Profile' header */
+}
+
+.fees-header {
+    text-align: left; /* Keep 'Tuition Fee Status' left-aligned */
+}
+
 .collapsible-content {
     border: 1px solid #ddd;
     border-top: none;

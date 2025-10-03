@@ -1,4 +1,4 @@
-/* --- COMPLETE AND FINAL style.css --- */
+/* --- COMPLETE AND FINAL style.css (with Fee Color Coding) --- */
 
 /* General Body and Page Structure */
 body {
@@ -8,7 +8,7 @@ body {
     padding: 0;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align content to the top */
+    align-items: flex-start;
     min-height: 100vh;
 }
 
@@ -89,33 +89,58 @@ li {
     border-radius: 4px;
 }
 
-/* --- FIX: Inline Mark Paid Button Styling --- */
+/* --- FEE STATUS COLOR CODING --- */
+.status-paid {
+    color: green;
+    font-weight: bold;
+}
+.status-unpaid {
+    color: red;
+    font-weight: bold;
+}
+.status-break {
+    color: orange;
+    font-weight: bold;
+}
 
-/* Targets list items in fee management to align button/text */
+/* --- ADMIN PANEL SPECIFIC STYLING --- */
+
+/* FIX: Inline Mark Paid Button Styling */
 #monthlyFees .fee-item {
     display: flex;
-    justify-content: space-between; /* Pushes content to the edges */
-    align-items: center;            /* Vertically centers items */
+    justify-content: space-between;
+    align-items: center;
     padding: 8px 10px;
-    background-color: #e9f7e9; /* Light green background for visibility */
+    background-color: #e9f7e9;
 }
 
 /* Targets the Mark Paid button specifically to keep it small and inline */
 .fee-item .mark-paid-btn {
-    width: auto; /* Allow button to size based on content */
+    width: auto;
     padding: 5px 10px;
-    margin: 0 0 0 15px; /* Margin on the left to separate from text */
+    margin: 0 0 0 15px;
     font-size: 14px;
-    background-color: #007bff; /* Use a distinct color for admin actions */
+    background-color: #007bff; /* Blue for 'Paid' action */
 }
 
 .fee-item .mark-paid-btn:hover {
     background-color: #0056b3;
 }
 
-/* --- Student Dashboard Header Styling --- */
+/* New: Break Button Styling (Admin Panel) */
+.fee-item .break-btn {
+    width: auto;
+    padding: 5px 10px;
+    margin: 0 5px; /* Add some space around the button */
+    font-size: 14px;
+    background-color: orange; /* Orange for 'Break' action */
+}
 
-/* Targets the main title for "The Academic Care" to give it prominence */
+.fee-item .break-btn:hover {
+    background-color: #cc8400;
+}
+
+/* --- Student Dashboard Header Styling --- */
 #studentName h2 {
     font-size: 1.8em;
     font-weight: bold;
@@ -123,7 +148,6 @@ li {
     margin-bottom: 10px;
 }
 
-/* Styles the details (Academic Year, Name, etc.) */
 #studentName p {
     font-size: 1em;
     margin: 5px 0;

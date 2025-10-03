@@ -6,13 +6,13 @@ import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChil
 // --- Global Firebase and App Configuration ---
 
 const firebaseConfig = {
-    // 🛑 YOUR CONFIGURATION DETAILS 🛑
-    apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
-    authDomain: "the-academic-care.firebaseapp.com",
-    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", 
-    projectId: "the-academic-care",
-    storageBucket: "the-academic-care.firebasestorage.app",
-    appId: "1:728354914429:web:9fe92ca6476baf6af2f114"
+    // 🛑 REPLACE THESE WITH YOUR ACTUAL CONFIGURATION DETAILS 🛑
+    apiKey: "YOUR_API_KEY_HERE", 
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "YOUR_DATABASE_URL_HERE", // e.g., https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    appId: "YOUR_APP_ID"
 };
 
 let app;
@@ -22,8 +22,8 @@ let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
 
-// 🛑 CRITICAL: SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
-const RTDB_ROOT_PATH = ''; // Change to 'appData' if your data is nested under /appData/
+// 🛑 SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
+const RTDB_ROOT_PATH = ''; // Keep as '' if 'students' and 'admins' are at the root level
 
 
 // Function to safely initialize Firebase and handle authentication
@@ -48,6 +48,7 @@ async function initializeAppAndAuth() {
             }
         });
     } catch (error) {
+        // This is the error handler that is being triggered!
         console.error("Firebase initialization or authentication failed:", error);
         document.getElementById('loginError').textContent = 'Firebase setup failed. Check console for details.';
         showLogin();
@@ -67,22 +68,32 @@ function getFeesRef(studentId) {
 function getStudentRef(studentId) {
     return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}`);
 }
-// Removed getCounterRef
 
-// --- View Switching Logic (Remains the same) ---
+// --- View Switching Logic ---
 
 window.showLogin = function () {
+    // Reset all form inputs and errors
+    document.getElementById('loginId').value = '';
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('registerError').textContent = '';
+    
+    // Show Login/Initial View
     document.getElementById('initialView').classList.remove('hidden');
     document.getElementById('registerView').classList.add('hidden');
     document.getElementById('dashboardView').classList.add('hidden');
-    document.getElementById('loginId').value = '';
-    document.getElementById('loginError').textContent = '';
 }
 
 window.showRegister = function () {
+    // Clear registration fields
+    document.getElementById('regName').value = '';
+    document.getElementById('regClass').value = '';
+    document.getElementById('regRoll').value = '';
+    document.getElementById('regGuardianPhone').value = '';
+    document.getElementById('registerError').textContent = '';
+
+    // Show Registration View
     document.getElementById('initialView').classList.add('hidden');
     document.getElementById('registerView').classList.remove('hidden');
-    document.getElementById('registerError').textContent = '';
 }
 
 window.showDashboard = function (isAdmin) {
@@ -124,7 +135,7 @@ async function checkLoginStatus() {
                 await initializeStudentPanel(currentStudentData);
                 showDashboard(false);
             } else {
-                logout();
+                logout(); // Log out if local ID is invalid
             }
         }
     } else {
@@ -164,11 +175,9 @@ async function handleAdminLogin(password) {
 
     if (!adminSnapshot.exists()) {
         errorElement.textContent = 'Invalid Admin Password.';
-        console.error("Admin Login Failed: No admin record matched the password.");
         return;
     }
     
-    // Check if the query returned any children (i.e., a match was found)
     let adminFound = false;
     adminSnapshot.forEach(() => {
         adminFound = true;
@@ -176,7 +185,6 @@ async function handleAdminLogin(password) {
 
     if (!adminFound) {
         errorElement.textContent = 'Invalid Admin Password.';
-        console.error("Admin Login Failed: Query returned snapshot but no children (Indexing issue?).");
         return;
     }
 
@@ -184,26 +192,22 @@ async function handleAdminLogin(password) {
     localStorage.setItem('isAdmin', 'true');
     await initializeAdminPanel();
     showDashboard(true);
-    console.log("Admin Login Successful");
 }
 
 async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
-    // RTDB: Get student data using the studentId as the key.
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
         errorElement.textContent = 'Invalid Student ID. Please register.';
-        console.error("Student Login Failed: Student ID not found in database at:", getStudentRef(studentId).toString());
         return;
     }
 
     const data = studentSnapshot.val();
     if (data.status === 'pending') {
         errorElement.textContent = 'Registration pending admin approval.';
-        console.error("Student Login Failed: Status is pending.");
         return;
     }
 
@@ -212,7 +216,6 @@ async function handleStudentLogin(studentId) {
     localStorage.setItem('isAdmin', 'false');
     await initializeStudentPanel(currentStudentData);
     showDashboard(false);
-    console.log("Student Login Successful");
 }
 
 window.logout = function () {
@@ -224,17 +227,17 @@ window.logout = function () {
     showLogin();
 }
 
-// --- Registration Logic (No Guardian Name) ---
+// --- Registration Logic (Uses Roll, No Guardian Name) ---
 
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
-    const guardianPhone = document.getElementById('regGuardianPhone').value.trim(); // <-- No Guardian Name input
+    const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
     const studentClass = document.getElementById('regClass').value.trim();
     const studentRoll = document.getElementById('regRoll').value.trim(); 
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
-    // NOTE: Removed 'guardianName' from this check
+    // Check for all required fields
     if (!name || !guardianPhone || !studentClass || !studentRoll) {
         errorElement.textContent = 'Please fill in all required fields (Name, Class, Roll, Phone).';
         return;
@@ -250,14 +253,13 @@ window.registerStudent = async function () {
         // Check if a student with this generated ID already exists
         const existingStudent = await get(getStudentRef(newId));
         if (existingStudent.exists()) {
-            errorElement.textContent = `A student with ID ${newId} already exists. Check Roll/Class or contact Admin.`;
+            errorElement.textContent = `A student with ID ${newId} already exists. Check Roll/Class combination or contact Admin.`;
             return;
         }
 
         // RTDB Set: Write the new student record
         await set(getStudentRef(newId), {
             name: name,
-            // Removed guardianName from the saved data
             guardianPhone: guardianPhone,
             class: studentClass,
             roll: studentRoll,
@@ -275,6 +277,7 @@ window.registerStudent = async function () {
 }
 
 // --- Student Panel Logic and Admin Panel Logic (RTDB) ---
+// ... (The rest of the dashboard and fee management logic follows below, unchanged) ...
 
 async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;
@@ -509,12 +512,12 @@ window.markBreak = async function (studentId, monthKey, monthName, currentStatus
 
 async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId) {
     // 🛑 IMPORTANT: REPLACE THE EMPTY STRING WITH YOUR ACTUAL GEMINI API KEY 🛑
-    const apiKey = ""; 
+    const apiKey = "YOUR_GEMINI_API_KEY_HERE"; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
     const loader = document.getElementById(loaderId);
     const responseDiv = document.getElementById(responseId);
 
-    if (apiKey === "") {
+    if (apiKey === "YOUR_GEMINI_API_KEY_HERE") {
         responseDiv.textContent = 'Error: Gemini API key is missing. Cannot generate response.';
         return;
     }
@@ -595,7 +598,6 @@ window.handleDraftCommunication = async function (studentId, monthName, status, 
 
     document.getElementById('draftedCommunication').value = '';
 
-    // Updated the prompt to use studentName instead of guardianName
     const userPrompt = `Draft a professional and polite communication message (suitable for SMS or email body) for a guardian. Student Name: ${studentName}, Student ID: ${studentId}. The issue is the fee for the month of ${monthName} is currently marked as: ${status}. The guardian's phone number is: ${guardianPhone}. Use a respectful tone.`;
 
     const systemPrompt = "You are a school administrator drafting a polite, formal reminder or notification to a guardian regarding a student's fee status. Keep the message concise (under 5 sentences) and clear. Do not include salutations or closings, just the message body.";

@@ -1,4 +1,4 @@
-// --- FINAL, COMPLETE, AND CORRECTED script.js ---
+// --- COMPLETE, FINAL, AND CORRECTED script.js ---
 
 // Firebase config (Use your actual configuration)
 var firebaseConfig = {
@@ -75,7 +75,7 @@ function login() {
     var id = document.getElementById("studentId").value.trim();
     clearLoginError();
 
-    // 1. ADMIN FLOW CHECK (Triggered by 'admin' keyword or an email format)
+    // 1. ADMIN FLOW CHECK
     if (id === "admin" || id.includes('@')) {
 
         var email = id.includes('@') ? id : prompt("Enter admin email:");
@@ -101,29 +101,26 @@ function login() {
                 document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
             });
 
-        return; // CRITICAL: Exit the function after attempting Admin login
+        return; 
     }
 
-    // 2. STUDENT FLOW (Runs if the input was not an admin keyword/email)
+    // 2. STUDENT FLOW
     database.ref('students/' + id).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var student = snapshot.val();
             
-            // Check for approval status
             if (student.status !== "approved") {
                 document.getElementById("loginError").innerText = "⏳ Pending admin approval";
                 return;
             }
             
-            // Student is approved, show dashboard
             currentStudent = id;
             document.getElementById("login-page").classList.add("hidden");
             document.getElementById("dashboard").classList.remove("hidden");
-            document.getElementById("studentName").innerText =
-                "Welcome, " + student.name + " (Class " + student.class + ", Roll " + student.roll + ")\nGuardian: " + student.guardian;
-            loadStudentDashboard(id);
+            
+            // The student dashboard header is now set inside loadStudentDashboard
+            loadStudentDashboard(id); 
         } else {
-            // No student ID found
             document.getElementById("loginError").innerText = "❌ Invalid ID!";
         }
     });
@@ -188,7 +185,7 @@ function loadStudentFeesDropdown() {
     });
 }
 
-// Fee Management Display - CHRONOLOGICAL MONTHS FIX
+// Admin Fee Management Display - Chronological and Structured for CSS
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
@@ -212,7 +209,8 @@ function loadStudentFees(studentId) {
         chronologicalMonths.forEach(function(month) {
             if (fees.hasOwnProperty(month)) {
                 var status = fees[month];
-                html += '<li>' + month + ': ' + status + ' <button onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';
+                // Added class="fee-item" for CSS to place the button correctly
+                html += '<li class="fee-item">' + month + ': ' + status + ' <button class="mark-paid-btn" onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';
             }
         });
 
@@ -223,33 +221,51 @@ function loadStudentFees(studentId) {
 function markMonthPaid(studentId, month) {
     if (!auth.currentUser) return logout();
     database.ref('students/' + studentId + '/fees/' + month).set("paid", function() {
-        // Reload fees to update the list immediately
         loadStudentFees(studentId);
     });
 }
 
-// Student Dashboard Display - CHRONOLOGICAL MONTHS FIX
+// Student Dashboard Display - Chronological, Current Month Limit, and New Header Format
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
         "July", "August", "September", "October", "November", "December"
     ];
     
-    database.ref('students/' + studentId + '/fees').once('value').then(function(snapshot) {
+    // Get the current month index (0=Jan, 11=Dec)
+    var currentDate = new Date();
+    var currentMonthIndex = currentDate.getMonth(); 
+    
+    database.ref('students/' + studentId).once('value').then(function(snapshot) {
         if (!snapshot.exists()) return;
+
+        var student = snapshot.val();
+
+        // --- NEW HEADER STRUCTURE ---
+        var headerHTML = '<h2>The Academic Care</h2>';
+        headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
+        headerHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
+        headerHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
+        headerHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
+        headerHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
+
+        document.getElementById("studentName").innerHTML = headerHTML;
         
-        var html = '<h3>Monthly Fees:</h3><ul>';
-        var fees = snapshot.val();
+        // --- MONTHLY FEES DISPLAY ---
+        var feesHTML = '<h3>Monthly Fees:</h3><ul>';
+        var fees = student.fees || {}; 
         
-        // Iterate over the chronological array
-        chronologicalMonths.forEach(function(month) {
+        // Iterate only up to the current month index (limits display to past and current months)
+        for (let i = 0; i <= currentMonthIndex; i++) {
+            var month = chronologicalMonths[i];
+            
             if (fees.hasOwnProperty(month)) {
                 var status = fees[month];
-                html += '<li>' + month + ': ' + status + '</li>';
+                feesHTML += '<li>' + month + ': ' + status + '</li>';
             }
-        });
+        }
         
-        html += '</ul>';
-        document.getElementById("studentFees").innerHTML = html;
+        feesHTML += '</ul>';
+        document.getElementById("studentFees").innerHTML = feesHTML;
     });
 }

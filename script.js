@@ -310,7 +310,7 @@ function renderFeeStatus(fees, ulElement) {
     ulElement.innerHTML = '';
     const today = new Date();
     const currentMonthIndex = today.getMonth();
-    // Use abbreviated month names
+    // Use abbreviated month names for display
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const fullMonthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -322,24 +322,24 @@ function renderFeeStatus(fees, ulElement) {
         li.classList.add('flex', 'justify-between', 'items-center', 'py-2');
 
         let status = 'unpaid';
-        let statusClass = 'bg-red-500';
+        let statusClass = 'bg-red-500 hover:bg-red-600';
         let details = '';
 
         if (feeData) {
             status = feeData.status;
             
             if (status === 'paid') {
-                statusClass = 'bg-green-500';
+                statusClass = 'bg-green-500 hover:bg-green-600';
                 const date = feeData.paymentDate ? new Date(feeData.paymentDate).toLocaleDateString() : 'N/A';
                 details = ` (Paid: ${date})`;
             } else if (status === 'break') {
-                statusClass = 'bg-yellow-500';
+                statusClass = 'bg-yellow-500 hover:bg-yellow-600';
                 details = ' (Break requested/approved)';
             }
         }
         
         // Use a styled button/badge for visual status
-        const statusBadge = `<span class="px-2 py-1 rounded text-white text-xs ${statusClass}">${status.toUpperCase()}</span>`;
+        const statusBadge = `<span class="px-2 py-1 rounded text-white text-xs ${statusClass} font-bold">${status.toUpperCase()}</span>`;
 
         li.innerHTML = `
             <div class="flex items-center space-x-3">
@@ -487,7 +487,7 @@ window.loadMonthlyFees = async function () {
     });
 }
 
-// 🛑 ADMIN FUNCTION (Kept as requested with Mark Break restored) 🛑
+// 🛑 ADMIN FUNCTION (FIXED: Removed Draft Comm. & Applied Green/Orange Colors) 🛑
 function renderAdminFeeManagement(studentId, fees, studentData) {
     const ulElement = document.getElementById('monthlyFees');
     ulElement.innerHTML = '';
@@ -500,7 +500,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
         const monthKey = monthName.toLowerCase();
         const feeData = fees[monthKey];
         const li = document.createElement('li');
-        li.classList.add('fee-item');
+        li.classList.add('fee-item', 'flex', 'justify-between', 'items-center', 'p-2', 'border-b');
 
         let status = 'unpaid';
         let statusClass = 'status-unpaid';
@@ -521,28 +521,28 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
         li.innerHTML = `
             <div class="fee-info">
                 <strong>${monthName}:</strong> 
-                <span class="${statusClass}">${status}</span>
-                <span class="fee-details">${details}</span>
+                <span class="${statusClass} font-bold">${status}</span>
+                <span class="fee-details text-xs text-gray-500">${details}</span>
             </div>
-            <div class="fee-actions">
+            <div class="fee-actions space-x-2">
                 ${!isPaid ? 
-                    // Show "Mark Paid" button if the fee is NOT paid (it could be 'unpaid' or 'break')
-                    `<button class="mark-paid-btn" onclick="openPaymentModal('${studentId}', '${monthKey}', '${monthName}')">Mark Paid</button>` 
+                    // Green 'Mark Paid' Button
+                    `<button class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${monthKey}', '${monthName}')">Mark Paid</button>` 
                     : ''
                 }
                 
                 ${!isPaid ? 
-                    // Show "Mark Break" button only if the fee is NOT paid
-                    // The text changes based on current status for clarity
-                    `<button class="break-btn" onclick="markBreak('${studentId}', '${monthKey}', '${monthName}', '${status}')">
+                    // Orange 'Mark Break' Button
+                    `<button class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded text-sm" onclick="markBreak('${studentId}', '${monthKey}', '${monthName}', '${status}')">
                         ${isBreak ? 'Unmark Break' : 'Mark Break'}
                     </button>` 
                     : ''
                 }
-
+                
                 ${status !== 'paid' ? 
-                    // Keep the Draft Comm. button for unpaid or break status
-                    `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="handleDraftCommunication('${studentId}', '${monthName}', '${status}', '${studentData.name}', '${studentData.guardianPhone}')">Draft Comm. ✨</button>` 
+                    // Moved 'Draft Comm' to a separate section in the admin panel if needed, but removed from monthly list
+                    // If you still need a communication button, consider placing it near the student selector.
+                    '' 
                     : ''
                 }
             </div>

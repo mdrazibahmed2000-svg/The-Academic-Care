@@ -1,4 +1,4 @@
-/* --- COMPLETE AND FINAL style.css (with Fee Color Coding) --- */
+/* --- COMPLETE AND FINAL style.css (with All Fixes) --- */
 
 /* General Body and Page Structure */
 body {
@@ -36,6 +36,8 @@ h2 {
 h3 {
     margin-top: 20px;
     color: #555;
+    /* Adjusted size for Monthly Fees subtitle */
+    font-size: 1.2em; 
 }
 
 /* Form Elements and Inputs */
@@ -87,9 +89,11 @@ li {
     border-bottom: 1px solid #eee;
     margin-bottom: 5px;
     border-radius: 4px;
+    /* Adjusted size for fee status list items */
+    font-size: 1.1em; 
 }
 
-/* --- FEE STATUS COLOR CODING --- */
+/* --- FEE STATUS COLOR CODING (CRITICAL FOR STUDENT PANEL) --- */
 .status-paid {
     color: green;
     font-weight: bold;
@@ -103,9 +107,9 @@ li {
     font-weight: bold;
 }
 
-/* --- ADMIN PANEL SPECIFIC STYLING --- */
+/* --- ADMIN PANEL SPECIFIC STYLING (For Mark Paid/Break buttons) --- */
 
-/* FIX: Inline Mark Paid Button Styling */
+/* FIX: Inline Mark Paid/Break Button Styling */
 #monthlyFees .fee-item {
     display: flex;
     justify-content: space-between;
@@ -114,7 +118,7 @@ li {
     background-color: #e9f7e9;
 }
 
-/* Targets the Mark Paid button specifically to keep it small and inline */
+/* Mark Paid Button (Admin Panel) */
 .fee-item .mark-paid-btn {
     width: auto;
     padding: 5px 10px;
@@ -127,11 +131,11 @@ li {
     background-color: #0056b3;
 }
 
-/* New: Break Button Styling (Admin Panel) */
+/* Break Button Styling (Admin Panel) */
 .fee-item .break-btn {
     width: auto;
     padding: 5px 10px;
-    margin: 0 5px; /* Add some space around the button */
+    margin: 0 5px; 
     font-size: 14px;
     background-color: orange; /* Orange for 'Break' action */
 }
@@ -140,16 +144,19 @@ li {
     background-color: #cc8400;
 }
 
-/* --- Student Dashboard Header Styling --- */
+/* --- Student Dashboard Header Styling (ADJUSTED SIZES) --- */
+
+/* Targets the main title for "The Academic Care" (Balanced size) */
 #studentName h2 {
-    font-size: 1.8em;
+    font-size: 1.6em;
     font-weight: bold;
     color: #0056b3;
     margin-bottom: 10px;
 }
 
+/* Styles the details (Academic Year, Name, etc.) (Balanced size) */
 #studentName p {
-    font-size: 1em;
+    font-size: 0.9em;
     margin: 5px 0;
     color: #333;
 }

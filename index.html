@@ -55,7 +55,11 @@
     <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- Load your script as a module -->
-  <script type="module" src="script.js"></script>
+  <!-- Firebase SDK (compat version, for your JS code) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Your JS (NOT as module) -->
+  <script src="script.js"></script>
 </body>
 </html>

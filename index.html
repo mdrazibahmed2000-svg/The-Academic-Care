@@ -1,65 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Academic Care - Tuition Management</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Care Fee Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <!-- Login Page -->
-  <div id="login-page" class="page active">
-    <h2>Login</h2>
-    <input type="text" id="studentId" placeholder="Enter Student ID or admin">
-    <button onclick="login()">Login</button>
-    <button class="secondary" onclick="showRegister()">Register</button>
-    <p id="loginError" class="error"></p>
-  </div>
+    <div class="page">
+        <p id="authUserId" class="text-xs text-center text-gray-400 mb-3"></p>
 
-  <!-- Registration Page -->
-  <div id="register-page" class="page">
-    <h2>Student Registration</h2>
-    <form id="registerForm" onsubmit="event.preventDefault(); registerStudent();">
-      <input type="text" id="regName" placeholder="Name">
-      <input type="number" id="regClass" placeholder="Class">
-      <input type="number" id="regRoll" placeholder="Roll">
-      <input type="text" id="regGuardian" placeholder="Guardian Mobile No">
-      <button type="submit">Register</button>
-    </form>
-    <button class="secondary" onclick="showLogin()">Back to Login</button>
-  </div>
+        <div id="initialView">
+            <h2 class="text-3xl font-bold text-center mb-6">Login</h2>
+            
+            <form id="loginForm" onsubmit="event.preventDefault(); login();">
+                <input type="text" id="loginId" placeholder="Student ID or 'admin'" required class="mb-3">
+                
+                <p id="loginError" class="error"></p>
+                <button type="submit">Login</button>
+            </form>
+            
+            <button onclick="showRegister()">Register</button>
+        </div>
 
-  <!-- Student Dashboard -->
-  <div id="dashboard" class="page">
-    <h2 id="studentName"></h2>
-    <div id="studentFees"></div>
-    <button class="secondary" onclick="logout()">Logout</button>
-  </div>
+        <div id="registerView" class="hidden">
+            <h2 class="text-3xl font-bold text-center mb-6 text-blue-600">New Registration</h2>
+            <input type="text" id="regName" placeholder="Student Name" required>
+            <input type="text" id="regGuardianName" placeholder="Guardian Name" required>
+            <input type="text" id="regGuardianPhone" placeholder="Guardian Phone Number" required>
+            <select id="regClass" required>
+                <option value="" disabled selected>Select Class</option>
+                <option value="9">Class 9</option>
+                <option value="10">Class 10</option>
+                <option value="11">Class 11</option>
+                <option value="12">Class 12</option>
+            </select>
+            <p id="registerError" class="error"></p>
+            <button onclick="registerStudent()">Submit Registration</button>
+            <button onclick="showLogin()" class="bg-gray-500 hover:bg-gray-600">Back to Login</button>
+        </div>
 
-  <!-- Admin Panel -->
-  <div id="admin-panel" class="page">
-    <h2>Admin Panel</h2>
+        <div id="dashboardView" class="hidden">
+            <h2 id="welcomeHeader" class="text-2xl font-bold text-center mb-5 text-gray-800">Welcome!</h2>
 
-    <h3>Pending Students</h3>
-    <ul id="pendingStudents"></ul>
+            <div id="studentPanel" class="hidden">
+                <p class="text-sm">ID: <strong id="studentIdDisplay"></strong>, Class: <strong id="studentClass"></strong></p>
+                <p class="text-sm">Status: <strong id="studentStatus" class="status-approved"></strong></p>
 
-    <h3>Approved Students</h3>
-    <ul id="approvedStudents"></ul>
+                <h3>Monthly Fee Status</h3>
+                <ul id="feeStatusList">
+                    </ul>
 
-    <h3>Monthly Fee Management</h3>
-    <select id="selectStudentFees" onchange="loadStudentFees(this.value)"></select>
-    <ul id="monthlyFees"></ul>
+                <div id="gemini-query-section">
+                    <h4 class="font-semibold text-lg text-blue-800 mb-2">Policy Assistant (AI) ✨</h4>
+                    <textarea id="geminiQuery" placeholder="Ask about payment policy, fee due dates, or 'What is my current status?'"
+                        class="w-full p-2 border rounded-md"></textarea>
+                    <button onclick="handleStudentQuery()" class="bg-blue-600 hover:bg-blue-700">Get AI Response</button>
+                    <div id="geminiLoader" class="loader hidden"></div>
+                    <div id="geminiResponse" class="mt-2 text-sm text-gray-700"></div>
+                </div>
+            </div>
 
-    <button onclick="changeAdminPassword()">Change Admin Password</button>
-    <button class="secondary" onclick="logout()">Logout</button>
-  </div>
+            <div id="adminPanel" class="hidden">
 
-  <!-- Firebase SDK (compat version) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+                <div class="collapsible-header" onclick="toggleCollapsible('pendingRegistrationsContent')">
+                    <span>Pending Registrations <span id="pendingCount">(0)</span></span>
+                    <span>&#9660;</span>
+                </div>
+                <div id="pendingRegistrationsContent" class="collapsible-content hidden">
+                    <ul id="pendingStudentsList">
+                        </ul>
+                </div>
 
-  <!-- Your JS -->
-  <script src="script.js"></script>
+                <h3>Fee Management</h3>
+                <select id="studentSelector" onchange="loadMonthlyFees()">
+                    <option value="">Select Student...</option>
+                </select>
+
+                <ul id="monthlyFees" class="mt-4">
+                    </ul>
+
+            </div>
+
+            <button onclick="logout()" class="mt-5">Log Out</button>
+        </div>
+    </div>
+
+    <div id="communicationModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Draft Communication (AI)</h3>
+            <textarea id="draftedCommunication" readonly></textarea>
+            <div id="communicationLoader" class="loader hidden"></div>
+            <button onclick="copyToClipboard('draftedCommunication')" class="bg-blue-500 hover:bg-blue-600">Copy to Clipboard</button>
+            <button onclick="closeModal()" class="close-button">Close</button>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
+
 </html>

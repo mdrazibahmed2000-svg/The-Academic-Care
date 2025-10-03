@@ -1,6 +1,6 @@
-// --- FULL REVISED script.js ---
+// --- FULL, FINAL, AND CORRECTED script.js ---
 
-// Firebase config (Use your actual config)
+// Firebase config (Use your actual configuration)
 var firebaseConfig = {
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
@@ -15,7 +15,7 @@ var firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
-var auth = firebase.auth(); // <-- Firebase Authentication Instance
+var auth = firebase.auth(); // The secure Firebase Authentication Instance
 var currentStudent = "";
 
 // UI Functions
@@ -43,7 +43,7 @@ function clearLoginError() {
     document.getElementById("loginError").innerText = "";
 }
 
-// Register Student 
+// Student Registration
 function registerStudent() {
     var name = document.getElementById("regName").value.trim();
     var studentClass = document.getElementById("regClass").value.trim();
@@ -70,12 +70,12 @@ function registerStudent() {
     });
 }
 
-// SECURE LOGIN FUNCTION - FINAL CORRECTED VERSION
+// SECURE LOGIN FUNCTION
 function login() {
     var id = document.getElementById("studentId").value.trim();
     clearLoginError();
 
-    // 1. ADMIN FLOW CHECK
+    // 1. ADMIN FLOW CHECK (Triggered by 'admin' keyword or an email format)
     if (id === "admin" || id.includes('@')) {
 
         var email = id.includes('@') ? id : prompt("Enter admin email:");
@@ -83,7 +83,7 @@ function login() {
 
         if (!email || !password) {
             document.getElementById("loginError").innerText = "Admin login cancelled.";
-            return; // Exit after cancellation
+            return;
         }
 
         auth.signInWithEmailAndPassword(email, password)
@@ -101,10 +101,10 @@ function login() {
                 document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
             });
 
-        return; // *** CRITICAL: EXIT THE FUNCTION AFTER ATTEMPTING ADMIN LOGIN ***
+        return; // CRITICAL: EXIT THE FUNCTION after attempting Admin login
     }
 
-    // 2. STUDENT FLOW (Only runs if the input was NOT an admin keyword/email)
+    // 2. STUDENT FLOW (Runs if the input was not an admin keyword/email)
     database.ref('students/' + id).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var student = snapshot.val();
@@ -129,7 +129,7 @@ function login() {
     });
 }
 
-// Admin Panel (Remaining functions are unchanged as they were not part of the login error)
+// Admin Panel Functions (Require auth check)
 function loadAdminPanel() {
     if (!auth.currentUser) return logout();
     database.ref('students').once('value').then(function(snapshot) {
@@ -188,19 +188,35 @@ function loadStudentFeesDropdown() {
     });
 }
 
+// Fee Management Display - CHRONOLOGICAL MONTHS FIX
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
         document.getElementById("monthlyFees").innerHTML = '';
         return;
     }
+    
+    // Define the chronological order of the months
+    var chronologicalMonths = [
+        "January", "February", "March", "April", "May", "June", 
+        "July", "August", "September", "October", "November", "December"
+    ];
+    
     database.ref('students/' + studentId + '/fees').once('value').then(function(snapshot) {
         if (!snapshot.exists()) return;
+        
         var html = '';
         var fees = snapshot.val();
-        for (var month in fees) {
-            html += '<li>' + month + ': ' + fees[month] + ' <button onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';
-        }
+        
+        // Iterate over the chronological array
+        chronologicalMonths.forEach(function(month) {
+            // Check if the month exists in the fetched fees data
+            if (fees.hasOwnProperty(month)) {
+                var status = fees[month];
+                html += '<li>' + month + ': ' + status + ' <button onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';
+            }
+        });
+
         document.getElementById("monthlyFees").innerHTML = html;
     });
 }
@@ -208,18 +224,33 @@ function loadStudentFees(studentId) {
 function markMonthPaid(studentId, month) {
     if (!auth.currentUser) return logout();
     database.ref('students/' + studentId + '/fees/' + month).set("paid", function() {
+        // Reload fees to update the list immediately
         loadStudentFees(studentId);
     });
 }
 
+// Student Dashboard Display - CHRONOLOGICAL MONTHS FIX
 function loadStudentDashboard(studentId) {
+    var chronologicalMonths = [
+        "January", "February", "March", "April", "May", "June", 
+        "July", "August", "September", "October", "November", "December"
+    ];
+    
     database.ref('students/' + studentId + '/fees').once('value').then(function(snapshot) {
         if (!snapshot.exists()) return;
+        
         var html = '<h3>Monthly Fees:</h3><ul>';
         var fees = snapshot.val();
-        for (var month in fees) html += '<li>' + month + ': ' + fees[month] + '</li>';
+        
+        // Iterate over the chronological array
+        chronologicalMonths.forEach(function(month) {
+            if (fees.hasOwnProperty(month)) {
+                var status = fees[month];
+                html += '<li>' + month + ': ' + status + '</li>';
+            }
+        });
+        
         html += '</ul>';
         document.getElementById("studentFees").innerHTML = html;
     });
 }
-

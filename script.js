@@ -1,6 +1,6 @@
 // --- COMPLETE, FINAL, AND CORRECTED script.js ---
 
-// Firebase config (Use your actual configuration)
+// Firebase config (USE YOUR ACTUAL CONFIGURATION!)
 var firebaseConfig = {
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
@@ -35,7 +35,7 @@ function getStatusClass(status) {
     return "";
 }
 
-// NEW FUNCTION: Toggles visibility of collapsible sections
+// FUNCTION: Toggles visibility of collapsible sections (FOR STUDENT DASHBOARD)
 function toggleSection(contentId) {
     const content = document.getElementById(contentId);
     const header = document.getElementById(contentId.replace('Content', 'Header'));
@@ -108,9 +108,8 @@ function login() {
     var id = document.getElementById("studentId").value.trim();
     clearLoginError();
 
-    // 1. ADMIN FLOW CHECK
+    // 1. ADMIN FLOW CHECK (Uses Firebase Auth for email/password)
     if (id === "admin" || id.includes('@')) {
-
         var email = id.includes('@') ? id : prompt("Enter admin email:");
         var password = prompt("Enter admin password:");
 
@@ -130,11 +129,10 @@ function login() {
                 console.error("Admin Login Error:", error.code, error.message);
                 document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
             });
-
         return; 
     }
 
-    // 2. STUDENT FLOW
+    // 2. STUDENT FLOW (Uses Realtime Database for ID and status check)
     database.ref('students/' + id).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var student = snapshot.val();
@@ -148,6 +146,12 @@ function login() {
             document.getElementById("login-page").classList.add("hidden");
             document.getElementById("dashboard").classList.remove("hidden");
             
+            // Re-initialize collapsible state to hidden on new login
+            document.getElementById("profileContent").classList.add("hidden");
+            document.getElementById("feesContent").classList.add("hidden");
+            document.getElementById("profileHeader").innerHTML = "My Profile ⬇️";
+            document.getElementById("feesHeader").innerHTML = "Tuition Fee Status ⬇️";
+
             loadStudentDashboard(id); 
         } else {
             document.getElementById("loginError").innerText = "❌ Invalid ID!";
@@ -155,7 +159,8 @@ function login() {
     });
 }
 
-// Admin Panel Functions
+// --- ADMIN FUNCTIONS ---
+
 function loadAdminPanel() {
     if (!auth.currentUser) return logout();
     database.ref('students').once('value').then(function(snapshot) {
@@ -206,7 +211,6 @@ function loadStudentFeesDropdown() {
     });
 }
 
-// Updated function to mark payment status, save date, AND save payment method
 function markMonthPaid(studentId, month) {
     if (!auth.currentUser) return logout();
     
@@ -229,14 +233,12 @@ function markMonthPaid(studentId, month) {
     });
 }
 
-// Mark Month as Break
 function markMonthBreak(studentId, month) {
     if (!auth.currentUser) return logout();
     database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
         loadStudentFees(studentId);
     });
 }
-
 
 // Admin Fee Management Display
 function loadStudentFees(studentId) {
@@ -290,7 +292,8 @@ function loadStudentFees(studentId) {
 }
 
 
-// Student Dashboard Display - FINAL STRUCTURE with Collapsible Sections
+// --- STUDENT DASHBOARD FUNCTIONS ---
+
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
@@ -305,13 +308,13 @@ function loadStudentDashboard(studentId) {
 
         var student = snapshot.val();
 
-        // --- 1. SCHOOL NAME AND ACADEMIC YEAR ---
+        // 1. SCHOOL NAME AND ACADEMIC YEAR
         var headerHTML = '<h2>The Academic Care</h2>';
         headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
         document.getElementById("studentName").innerHTML = headerHTML;
         
         
-        // --- 2. MY PROFILE CONTENT (Content for profileContent div) ---
+        // 2. MY PROFILE CONTENT
         var profileContentHTML = '';
         profileContentHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
         profileContentHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
@@ -321,7 +324,7 @@ function loadStudentDashboard(studentId) {
         document.getElementById("profileContent").innerHTML = profileContentHTML;
 
 
-        // --- 3. TUITION FEE STATUS CONTENT (Content for feesContent div) ---
+        // 3. TUITION FEE STATUS CONTENT
         var feesContentHTML = '<ul>';
         var fees = student.fees || {}; 
         

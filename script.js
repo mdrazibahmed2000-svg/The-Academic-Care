@@ -1,4 +1,4 @@
-// --- FULL, FINAL, AND CORRECTED script.js ---
+// --- FINAL, COMPLETE, AND CORRECTED script.js ---
 
 // Firebase config (Use your actual configuration)
 var firebaseConfig = {
@@ -15,7 +15,7 @@ var firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
-var auth = firebase.auth(); // The secure Firebase Authentication Instance
+var auth = firebase.auth(); 
 var currentStudent = "";
 
 // UI Functions
@@ -101,7 +101,7 @@ function login() {
                 document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
             });
 
-        return; // CRITICAL: EXIT THE FUNCTION after attempting Admin login
+        return; // CRITICAL: Exit the function after attempting Admin login
     }
 
     // 2. STUDENT FLOW (Runs if the input was not an admin keyword/email)
@@ -210,7 +210,6 @@ function loadStudentFees(studentId) {
         
         // Iterate over the chronological array
         chronologicalMonths.forEach(function(month) {
-            // Check if the month exists in the fetched fees data
             if (fees.hasOwnProperty(month)) {
                 var status = fees[month];
                 html += '<li>' + month + ': ' + status + ' <button onclick="markMonthPaid(\'' + studentId + '\',\'' + month + '\')">Mark Paid</button></li>';

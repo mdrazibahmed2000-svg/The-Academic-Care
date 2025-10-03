@@ -5,40 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Academic Care Fee Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles */
-        .status-paid { color: #10B981; font-weight: bold; }
-        .status-unpaid { color: #EF4444; font-weight: bold; }
-        .status-pending { color: #F59E0B; font-weight: bold; }
-        .status-break { color: #3B82F6; font-weight: bold; }
-        
-        /* Dashboard layout adjustments */
-        #dashboardView { display: grid; grid-template-columns: 1fr; gap: 2rem; }
-        @media (min-width: 1024px) {
-            #dashboardView { grid-template-columns: 2fr 1fr; }
-            #adminPanel #mainContent { grid-template-columns: 1fr 1fr; }
-        }
-        
-        /* Fee list styling */
-        .fee-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #E5E7EB;
-        }
-        .fee-actions button {
-            margin-left: 0.5rem;
-            padding: 0.3rem 0.6rem;
-            border-radius: 0.25rem;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .mark-paid-btn { background-color: #22C55E; color: white; }
-        .mark-paid-btn:hover { background-color: #16A34A; }
-        .break-btn { background-color: #F97316; color: white; }
-        .break-btn:hover { background-color: #EA580C; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen p-4 sm:p-8">
 
@@ -153,7 +120,7 @@
                 <div class="bg-yellow-50 p-6 rounded-lg shadow border border-yellow-300">
                     <h3 class="text-xl font-semibold text-yellow-800 border-b pb-2 mb-4">Pending Approvals <span id="pendingCount" class="text-sm">(0)</span></h3>
                     <ul id="pendingStudentsList" class="space-y-3">
-                        <p class="text-gray-500">Loading pending students...</p>
+                        <p class="text-gray-500">No pending students...</p>
                     </ul>
                 </div>
 

@@ -36,7 +36,7 @@ async function initializeAppAndAuth() {
 
         await setPersistence(auth, browserSessionPersistence);
         
-        // This is the line that fails if Anonymous Auth is DISABLED
+        // This is the line that fails if Anonymous Auth is DISABLED in Firebase Console
         await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
@@ -52,8 +52,9 @@ async function initializeAppAndAuth() {
     } catch (error) {
         // This catches the error if Firebase initialization or Anonymous sign-in fails
         console.error("Firebase initialization or authentication failed:", error);
-        document.getElementById('loginError').textContent = 'Firebase setup failed. Check console for details.';
-        showLogin();
+        document.getElementById('loginError').textContent = 'Firebase setup failed. Check console (F12) for details.';
+        // If the Firebase connection fails, we call showLogin() here to at least try and hide the dashboard.
+        showLogin(); 
     }
 }
 
@@ -82,7 +83,7 @@ window.showLogin = function () {
     // Show Login/Initial View
     document.getElementById('initialView').classList.remove('hidden');
     document.getElementById('registerView').classList.add('hidden');
-    document.getElementById('dashboardView').classList.add('hidden');
+    document.getElementById('dashboardView').classList.add('hidden'); // CRITICAL: This hides the dashboard
 }
 
 window.showRegister = function () {

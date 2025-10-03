@@ -35,7 +35,9 @@ async function initializeAppAndAuth() {
         auth = getAuth(app);
 
         await setPersistence(auth, browserSessionPersistence);
-        await signInAnonymously(auth);
+        
+        // This is the line that fails if Anonymous Auth is DISABLED
+        await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -48,7 +50,7 @@ async function initializeAppAndAuth() {
             }
         });
     } catch (error) {
-        // This is the error handler that is being triggered!
+        // This catches the error if Firebase initialization or Anonymous sign-in fails
         console.error("Firebase initialization or authentication failed:", error);
         document.getElementById('loginError').textContent = 'Firebase setup failed. Check console for details.';
         showLogin();
@@ -233,7 +235,7 @@ window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
     const studentClass = document.getElementById('regClass').value.trim();
-    const studentRoll = document.getElementById('regRoll').value.trim(); 
+    const studentRoll = document.getElementById('regRoll').value.trim(); // Reads Roll Number
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
@@ -277,7 +279,6 @@ window.registerStudent = async function () {
 }
 
 // --- Student Panel Logic and Admin Panel Logic (RTDB) ---
-// ... (The rest of the dashboard and fee management logic follows below, unchanged) ...
 
 async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;

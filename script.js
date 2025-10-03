@@ -1,17 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, runTransaction, FieldValue, Timestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, runTransaction, Timestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Global Firebase and App Configuration ---
 
 const firebaseConfig = {
-    // 🛑 IMPORTANT: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION 🛑
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    // 🛑 IMPORTANT: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION (The Academic Care) 🛑
+    apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
+    authDomain: "the-academic-care.firebaseapp.com",
+    projectId: "the-academic-care",
+    storageBucket: "the-academic-care.firebasestorage.app",
+    messagingSenderId: "728354914429",
+    appId: "1:728354914429:web:9fe92ca6476baf6af2f114"
 };
 
 let app;
@@ -106,7 +106,7 @@ window.toggleCollapsible = function (id) {
     content.classList.toggle('hidden');
 }
 
-// --- Auth and Login Logic (MODIFIED for single input) ---
+// --- Auth and Login Logic ---
 
 async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
@@ -142,7 +142,6 @@ window.login = async function () {
     }
 
     if (id.toLowerCase() === 'admin') {
-        // Prompt for password since the input field is hidden for a cleaner look
         const adminPassword = prompt("Enter Admin Password:");
         if (!adminPassword) {
             errorElement.textContent = 'Admin login cancelled.';

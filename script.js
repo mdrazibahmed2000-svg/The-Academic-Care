@@ -27,12 +27,28 @@ function getCurrentDate() {
     return dd + '-' + mm + '-' + yyyy;
 }
 
-// Utility function to get the correct CSS class for status (CRITICAL FOR COLORS)
+// Utility function to get the correct CSS class for status
 function getStatusClass(status) {
     if (status === "paid") return "status-paid";
     if (status === "unpaid") return "status-unpaid";
     if (status === "break") return "status-break";
     return "";
+}
+
+// NEW FUNCTION: Toggles visibility of collapsible sections
+function toggleSection(contentId) {
+    const content = document.getElementById(contentId);
+    const header = document.getElementById(contentId.replace('Content', 'Header'));
+    
+    if (content.classList.contains('hidden')) {
+        // Show content
+        content.classList.remove('hidden');
+        header.innerHTML = header.innerHTML.replace('⬇️', '⬆️');
+    } else {
+        // Hide content
+        content.classList.add('hidden');
+        header.innerHTML = header.innerHTML.replace('⬆️', '⬇️');
+    }
 }
 
 // UI Functions
@@ -105,15 +121,12 @@ function login() {
 
         auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                // --- SUCCESS BLOCK: SHOW ADMIN PANEL ---
                 document.getElementById("login-page").classList.add("hidden");
                 document.getElementById("admin-panel").classList.remove("hidden");
-
                 loadAdminPanel();
                 loadStudentFeesDropdown();
             })
             .catch((error) => {
-                // --- FAILURE BLOCK: SHOW ERROR MESSAGE ---
                 console.error("Admin Login Error:", error.code, error.message);
                 document.getElementById("loginError").innerText = "❌ Admin Login Failed: Invalid email or password.";
             });
@@ -175,7 +188,6 @@ function initializeMonthlyFees(studentId) {
     var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     var updates = {};
     months.forEach(function(m) {
-        // Status is initialized as a simple string
         updates[m] = "unpaid";
     });
     database.ref('students/' + studentId + '/fees').set(updates);
@@ -198,30 +210,26 @@ function loadStudentFeesDropdown() {
 function markMonthPaid(studentId, month) {
     if (!auth.currentUser) return logout();
     
-    // Prompt the admin for the payment method
     let method = prompt("Enter payment method for " + month + " (bKash, Nagad, or Cash):");
     
-    // Basic validation
     if (!method) {
         alert("Payment method is required. Payment canceled.");
         return;
     }
     
-    // Create the payment record object
     const paymentRecord = {
         status: "paid",
         date: getCurrentDate(),
-        method: method.trim() // Save the method provided by the admin
+        method: method.trim()
     };
     
-    // Update the database
     database.ref('students/' + studentId + '/fees/' + month).set(paymentRecord, function() {
         alert("Payment for " + month + " recorded successfully!");
         loadStudentFees(studentId);
     });
 }
 
-// Mark Month as Break (saves as a simple string)
+// Mark Month as Break
 function markMonthBreak(studentId, month) {
     if (!auth.currentUser) return logout();
     database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
@@ -230,7 +238,7 @@ function markMonthBreak(studentId, month) {
 }
 
 
-// Admin Fee Management Display - Chronological, Mark Paid/Break Buttons and Colors (Now includes Payment Method)
+// Admin Fee Management Display
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
@@ -255,25 +263,20 @@ function loadStudentFees(studentId) {
                 let status = fees[month];
                 let dateMethodDisplay = '';
                 
-                // Check if status is an object (meaning it's paid with date/method)
                 if (typeof status === 'object' && status !== null && status.status) {
-                    // Display both the date and the method for paid status
                     dateMethodDisplay = ` (Date: ${status.date}, Method: ${status.method})`;
-                    status = status.status; // Get the string status for class check
+                    status = status.status;
                 }
 
                 var statusClass = getStatusClass(status);
                 var statusText = `<span class="${statusClass}">${status}</span>`;
 
-                // Add both Mark Paid and Mark Break buttons
                 html += '<li class="fee-item">' + month + ': ' + statusText + dateMethodDisplay + ' ';
                 
-                // Only show Mark Break button if not already on a break status
                 if(status !== 'break') {
                     html += `<button class="break-btn" onclick="markMonthBreak('${studentId}','${month}')">Mark Break</button>`;
                 }
                 
-                // Mark Paid button is only shown if status is NOT paid or break
                 if(status !== 'paid' && status !== 'break') {
                     html += `<button class="mark-paid-btn" onclick="markMonthPaid('${studentId}','${month}')">Mark Paid</button>`;
                 }
@@ -287,7 +290,7 @@ function loadStudentFees(studentId) {
 }
 
 
-// Student Dashboard Display - FINAL STRUCTURE AND CONTENT
+// Student Dashboard Display - FINAL STRUCTURE with Collapsible Sections
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
@@ -302,29 +305,26 @@ function loadStudentDashboard(studentId) {
 
         var student = snapshot.val();
 
-        // --- 1. SCHOOL NAME HEADER (First Line) ---
+        // --- 1. SCHOOL NAME AND ACADEMIC YEAR ---
         var headerHTML = '<h2>The Academic Care</h2>';
         headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
         document.getElementById("studentName").innerHTML = headerHTML;
         
         
-        // --- 2. MY PROFILE SECTION (Second Line, Centered) ---
-        var profileHTML = '<div class="profile-box">';
-        profileHTML += '<h3>My Profile</h3>'; 
-        profileHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
-        profileHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
-        profileHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
-        profileHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
-        profileHTML += '</div>';
+        // --- 2. MY PROFILE CONTENT (Content for profileContent div) ---
+        var profileContentHTML = '';
+        profileContentHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
+        profileContentHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
+        profileContentHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
+        profileContentHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
 
-        document.getElementById("studentFees").innerHTML = profileHTML;
+        document.getElementById("profileContent").innerHTML = profileContentHTML;
 
 
-        // --- 3. TUITION FEE STATUS DISPLAY (Third Line) ---
-        var feesHTML = '<h3>Tuition Fee Status:</h3><ul>';
+        // --- 3. TUITION FEE STATUS CONTENT (Content for feesContent div) ---
+        var feesContentHTML = '<ul>';
         var fees = student.fees || {}; 
         
-        // Iterate only up to the current month index (limits display to past and current months)
         for (let i = 0; i <= currentMonthIndex; i++) {
             var month = chronologicalMonths[i];
             
@@ -333,22 +333,19 @@ function loadStudentDashboard(studentId) {
                 let status = fees[month];
                 let dateDisplay = '';
                 
-                // Check if status is an object (meaning it's paid with date/method)
                 if (typeof status === 'object' && status !== null && status.status) {
-                    dateDisplay = ` (Paid on: ${status.date})`; // Only display date, not method
-                    status = status.status; // Get the string status for class check
+                    dateDisplay = ` (Paid on: ${status.date})`;
+                    status = status.status; 
                 }
 
                 var statusClass = getStatusClass(status); 
                 
-                // Status text is wrapped in <span> with the color class
-                feesHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + dateDisplay + '</span></li>';
+                feesContentHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + dateDisplay + '</span></li>';
             }
         }
         
-        feesHTML += '</ul>';
+        feesContentHTML += '</ul>';
         
-        // Append the fees status right after the profile box
-        document.getElementById("studentFees").innerHTML += feesHTML;
+        document.getElementById("feesContent").innerHTML = feesContentHTML;
     });
 }

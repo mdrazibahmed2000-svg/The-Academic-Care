@@ -1,380 +1,380 @@
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
-    /* CSS Variables for theming */
-    :root {
-        --primary-color: #007bff;
-        /* Blue (Login/Mark Paid default) */
-        --primary-hover: #0056b3;
-        --secondary-color: #6c757d;
-        /* Gray (Logout/Default Action) */
-        --background-color: #f8f9fa;
-        /* Light Gray */
-        --card-background: #ffffff;
-        /* White */
-        --border-color: #dee2e6;
-        
-        /* ENHANCED STATUS COLORS FOR CLEAR VISIBILITY */
-        --success-color: #1a7a40; /* Deep Forest Green (Paid Status) */
-        --danger-color: #c82333; /* Strong Crimson Red (Unpaid Status & Close Button) */
-        --warning-color: #f0ad4e; /* Visible Amber/Orange (Break Status & Button) */
-        --info-color: #17a2b8; /* Cyan Blue (Draft Communication) */
-    }
+    /* CSS Variables for theming */
+    :root {
+        --primary-color: #007bff;
+        /* Blue (Login/Mark Paid default) */
+        --primary-hover: #0056b3;
+        --secondary-color: #6c757d;
+        /* Gray (Logout/Default Action) */
+        --background-color: #f8f9fa;
+        /* Light Gray */
+        --card-background: #ffffff;
+        /* White */
+        --border-color: #dee2e6;
+        
+        /* ENHANCED STATUS COLORS FOR CLEAR VISIBILITY */
+        --success-color: #1a7a40; /* Deep Forest Green (Paid Status) */
+        --danger-color: #c82333; /* Strong Crimson Red (Unpaid Status & Close Button) */
+        --warning-color: #f0ad4e; /* Visible Amber/Orange (Break Status & Button) */
+        --info-color: #17a2b8; /* Cyan Blue (Draft Communication) */
+    }
 
-    /* General Body and Page Structure */
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--background-color);
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        padding-top: 20px;
-    }
+    /* General Body and Page Structure */
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background-color);
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding-top: 20px;
+    }
 
-    .page {
-        background-color: var(--card-background);
-        padding: 25px;
-        margin: 0 10px 20px 10px;
-        border-radius: 12px;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced Page Shadow */
-        width: 100%;
-        max-width: 450px;
-        box-sizing: border-box;
-    }
+    .page {
+        background-color: var(--card-background);
+        padding: 25px;
+        margin: 0 10px 20px 10px;
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced Page Shadow */
+        width: 100%;
+        max-width: 450px;
+        box-sizing: border-box;
+    }
 
-    /* Hides content by default, used for collapsible sections and Modals */
-    .hidden {
-        display: none !important;
-    }
+    /* Hides content by default, used for collapsible sections and Modals */
+    .hidden {
+        display: none !important;
+    }
 
-    /* Headings */
-    h2 {
-        color: var(--primary-color);
-        text-align: center;
-        margin-bottom: 10px;
-    }
+    /* Headings */
+    h2 {
+        color: var(--primary-color);
+        text-align: center;
+        margin-bottom: 10px;
+    }
 
-    h3 {
-        margin-top: 20px;
-        color: #333;
-        font-size: 1.3em;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 5px;
-    }
+    h3 {
+        margin-top: 20px;
+        color: #333;
+        font-size: 1.3em;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 5px;
+    }
 
-    /* --- COLLAPSIBLE SECTION STYLING --- */
+    /* --- COLLAPSIBLE SECTION STYLING --- */
 
-    .collapsible-header {
-        cursor: pointer;
-        margin-top: 15px !important;
-        background-color: #e9ecef;
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        font-size: 1.1em;
-        font-weight: 600;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
+    .collapsible-header {
+        cursor: pointer;
+        margin-top: 15px !important;
+        background-color: #e9ecef;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 1.1em;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
 
-    .collapsible-content {
-        border: 1px solid var(--border-color);
-        border-top: none;
-        padding: 15px;
-        border-radius: 0 0 8px 8px;
-        margin-bottom: 15px;
-        background-color: #f8f9fa;
-    }
+    .collapsible-content {
+        border: 1px solid var(--border-color);
+        border-top: none;
+        padding: 15px;
+        border-radius: 0 0 8px 8px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
 
-    .collapsible-content p {
-        font-size: 1em;
-        margin: 5px 0;
-        color: #333;
-    }
+    .collapsible-content p {
+        font-size: 1em;
+        margin: 5px 0;
+        color: #333;
+    }
 
-    /* Form Elements and Inputs */
-    input[type="text"],
-    input[type="number"],
-    input[type="email"],
-    input[type="password"],
-    select,
-    textarea {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 15px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        box-sizing: border-box;
-        font-size: 1em;
-    }
+    /* Form Elements and Inputs */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 15px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 1em;
+    }
 
-    /* Generic Button Styling (Applies to all full-width buttons) */
-    button {
-        width: 100%;
-        padding: 12px 15px;
-        margin-top: 10px;
-        border: none;
-        border-radius: 6px;
-        color: #fff;
-        background-color: var(--success-color);
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 600;
-        transition: background-color 0.3s ease, box-shadow 0.2s, transform 0.1s;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* Stronger default shadow */
-    }
+    /* Generic Button Styling (Applies to all full-width buttons) */
+    button {
+        width: 100%;
+        padding: 12px 15px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        background-color: var(--success-color);
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s ease, box-shadow 0.2s, transform 0.1s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* Stronger default shadow */
+    }
 
-    button:hover {
-        background-color: #1e7e34;
-        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
-        transform: translateY(-1px); /* Slight lift on hover */
-    }
+    button:hover {
+        background-color: #1e7e34;
+        box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+        transform: translateY(-1px); /* Slight lift on hover */
+    }
 
-    /* --- Specific Full-Width Button Color Overrides --- */
-    #loginForm button {
-        background-color: var(--primary-color);
-    }
+    /* --- Specific Full-Width Button Color Overrides --- */
+    #loginForm button {
+        background-color: var(--primary-color);
+    }
 
-    #loginForm button:hover {
-        background-color: var(--primary-hover);
-    }
-    
-    /* Register button and general success actions */
-    #initialView > button:last-of-type {
-        background-color: var(--success-color);
-    }
+    #loginForm button:hover {
+        background-color: var(--primary-hover);
+    }
+    
+    /* Register button and general success actions */
+    #initialView > button:last-of-type {
+        background-color: var(--success-color);
+    }
 
-    #initialView > button:last-of-type:hover {
-        background-color: #1e7e34;
-    }
+    #initialView > button:last-of-type:hover {
+        background-color: #1e7e34;
+    }
 
-    #dashboardView > button:not(.fee-item button) {
-        background-color: var(--secondary-color); /* Logout button is Gray */
-    }
+    #dashboardView > button:not(.fee-item button) {
+        background-color: var(--secondary-color); /* Logout button is Gray */
+    }
 
-    #dashboardView > button:not(.fee-item button):hover {
-        background-color: #5a6268;
-    }
-    /* --- END Specific Full-Width Button Color Overrides --- */
+    #dashboardView > button:not(.fee-item button):hover {
+        background-color: #5a6268;
+    }
+    /* --- END Specific Full-Width Button Color Overrides --- */
 
-    /* Error Messages */
-    .error {
-        color: var(--danger-color);
-        text-align: center;
-        margin: 15px 0;
-        font-weight: bold;
-    }
+    /* Error Messages */
+    .error {
+        color: var(--danger-color);
+        text-align: center;
+        margin: 15px 0;
+        font-weight: bold;
+    }
 
-    /* List Styling (Admin and Student Fees) */
-    ul {
-        list-style: none;
-        padding: 0;
-    }
+    /* List Styling (Admin and Student Fees) */
+    ul {
+        list-style: none;
+        padding: 0;
+    }
 
-    li {
-        /* Base style for list items */
-        padding: 12px;
-        margin-bottom: 8px;
-        border-radius: 6px;
-        font-size: 1em;
-        line-height: 1.4;
-        background-color: #fcfcfc;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
+    li {
+        /* Base style for list items */
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 6px;
+        font-size: 1em;
+        line-height: 1.4;
+        background-color: #fcfcfc;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
 
-    /* --- FEE STATUS COLOR CODING (Applied to the text) --- */
-    .status-paid {
-        color: var(--success-color);
-        font-weight: 700;
-    }
+    /* --- FEE STATUS COLOR CODING (Applied to the text) --- */
+    .status-paid {
+        color: var(--success-color);
+        font-weight: 700;
+    }
 
-    .status-unpaid {
-        color: var(--danger-color);
-        font-weight: 700;
-    }
+    .status-unpaid {
+        color: var(--danger-color);
+        font-weight: 700;
+    }
 
-    .status-break {
-        color: var(--warning-color);
-        font-weight: 700;
-    }
+    .status-break {
+        color: var(--warning-color);
+        font-weight: 700;
+    }
 
-    /* --- ADMIN PANEL FEE MANAGEMENT STYLING --- */
+    /* --- ADMIN PANEL FEE MANAGEMENT STYLING --- */
 
-    #monthlyFees .fee-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px;
-        background-color: #eaf5e9; /* Light green background for fee items */
-        border: 1px solid #d4edda;
-        flex-wrap: wrap;
-    }
+    #monthlyFees .fee-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background-color: #eaf5e9; /* Light green background for fee items */
+        border: 1px solid #d4edda;
+        flex-wrap: wrap;
+    }
 
-    .fee-info {
-        flex: 1 1 45%; 
-        padding-right: 10px;
-    }
+    .fee-info {
+        flex: 1 1 45%; 
+        padding-right: 10px;
+    }
 
-    .fee-actions {
-        display: flex;
-        gap: 8px; /* Increased gap for better touch targets and visual separation */
-        flex: 1 1 auto;
-        justify-content: flex-end;
-        margin-top: 5px; /* Default margin for mobile stacking */
-    }
+    .fee-actions {
+        display: flex;
+        gap: 8px; /* Increased gap for better touch targets and visual separation */
+        flex: 1 1 auto;
+        justify-content: flex-end;
+        margin-top: 5px; /* Default margin for mobile stacking */
+    }
 
-    @media (min-width: 400px) {
-        .fee-actions {
-            margin-top: 0;
-        }
-    }
+    @media (min-width: 400px) {
+        .fee-actions {
+            margin-top: 0;
+        }
+    }
 
-    /* Styling for buttons inside the list items */
-    .fee-item button {
-        width: auto;
-        padding: 7px 12px;
-        margin: 0;
-        font-size: 13px;
-        flex-shrink: 0;
-        /* Reset shadow and apply specific shadow for inline buttons */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
-        background-color: var(--secondary-color); /* Default gray for action buttons */
-    }
+    /* Styling for buttons inside the list items */
+    .fee-item button {
+        width: auto;
+        padding: 7px 12px;
+        margin: 0;
+        font-size: 13px;
+        flex-shrink: 0;
+        /* Reset shadow and apply specific shadow for inline buttons */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+        background-color: var(--secondary-color); /* Default gray for action buttons */
+    }
 
-    .fee-item button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    }
+    .fee-item button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
 
-    /* Mark Paid Button (Primary Action for Admin) */
-    .fee-item .mark-paid-btn {
-        background-color: var(--primary-color);
-    }
+    /* Mark Paid Button (Primary Action for Admin) */
+    .fee-item .mark-paid-btn {
+        background-color: var(--primary-color);
+    }
 
-    .fee-item .mark-paid-btn:hover {
-        background-color: var(--primary-hover);
-    }
+    .fee-item .mark-paid-btn:hover {
+        background-color: var(--primary-hover);
+    }
 
-    /* Break Button Styling (Warning Action) */
-    .fee-item .break-btn {
-        background-color: var(--warning-color);
-        color: #333; /* Dark text on light button */
-    }
+    /* Break Button Styling (Warning Action) */
+    .fee-item .break-btn {
+        background-color: var(--warning-color);
+        color: #333; /* Dark text on light button */
+    }
 
-    .fee-item .break-btn:hover {
-        background-color: #e09930;
-    }
+    .fee-item .break-btn:hover {
+        background-color: #e09930;
+    }
 
-    /* Draft Communication Button (Info Action) - Targeting Tailwind class */
-    .fee-item .bg-blue-500 {
-        background-color: var(--info-color) !important;
-    }
+    /* Draft Communication Button (Info Action) - Targeting Tailwind class */
+    .fee-item .bg-blue-500 {
+        background-color: var(--info-color) !important;
+    }
 
-    .fee-item .bg-blue-500:hover {
-        background-color: #138496 !important;
-    }
+    .fee-item .bg-blue-500:hover {
+        background-color: #138496 !important;
+    }
 
-    .fee-details {
-        display: block;
-        font-size: 0.85em;
-        color: #555;
-        margin-top: 3px;
-    }
-    /* --- END ADMIN PANEL FEE MANAGEMENT STYLING --- */
+    .fee-details {
+        display: block;
+        font-size: 0.85em;
+        color: #555;
+        margin-top: 3px;
+    }
+    /* --- END ADMIN PANEL FEE MANAGEMENT STYLING --- */
 
-    /* --- Gemini Feature Styling --- */
-    #gemini-query-section {
-        margin-top: 15px;
-        padding: 15px;
-        background-color: #e6f7ff;
-        border: 1px solid #b3e0ff;
-        border-radius: 8px;
-    }
+    /* --- Gemini Feature Styling --- */
+    #gemini-query-section {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: #e6f7ff;
+        border: 1px solid #b3e0ff;
+        border-radius: 8px;
+    }
 
-    #geminiResponse {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #fff;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        white-space: pre-wrap;
-        font-size: 0.9em;
-        min-height: 50px;
-    }
+    #geminiResponse {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-size: 0.9em;
+        min-height: 50px;
+    }
 
-    /* Loader */
-    .loader {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--primary-color);
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        animation: spin 1s linear infinite;
-        margin: 10px auto;
-    }
+    /* Loader */
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+    }
 
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
 
-        100% {
-            transform: rotate(360deg);
-        }
-    }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
 
-    /* Modal Styling */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
+    /* Modal Styling */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
 
-    .modal-content {
-        background: var(--card-background);
-        padding: 25px;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 500px;
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-    }
+    .modal-content {
+        background: var(--card-background);
+        padding: 25px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    }
 
-    .modal-content h3 {
-        margin-top: 0;
-        border-bottom: 2px solid var(--primary-color);
-    }
+    .modal-content h3 {
+        margin-top: 0;
+        border-bottom: 2px solid var(--primary-color);
+    }
 
-    #draftedCommunication {
-        width: 100%;
-        height: 200px;
-        padding: 10px;
-        border: 1px solid #ced4da;
-        border-radius: 6px;
-        box-sizing: border-box;
-        resize: vertical;
-        font-family: monospace;
-        background-color: #f4f4f4;
-    }
+    #draftedCommunication {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        box-sizing: border-box;
+        resize: vertical;
+        font-family: monospace;
+        background-color: #f4f4f4;
+    }
 
-    .close-button {
-        background-color: var(--danger-color) !important;
-        margin-top: 15px;
-    }
+    .close-button {
+        background-color: var(--danger-color) !important;
+        margin-top: 15px;
+    }
 
-    .close-button:hover {
-        background-color: #a81c2d !important;
-    }
+    .close-button:hover {
+        background-color: #a81c2d !important;
+    }
 </style>
 

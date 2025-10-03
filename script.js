@@ -454,7 +454,8 @@ window.approveStudent = async function (studentId) {
 
 function renderStudentSelector(students) {
     const selector = document.getElementById('studentSelector');
-    const selectedId = selector.value;
+    // Save the currently selected ID to re-select it after re-rendering
+    const selectedId = selector.value; 
     selector.innerHTML = '<option value="">Select Student...</option>';
 
     students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
@@ -466,25 +467,35 @@ function renderStudentSelector(students) {
         }
         selector.appendChild(option);
     });
+
+    // CRITICAL: Call loadMonthlyFees if an ID is selected (re-select scenario after listener update)
     if (selectedId) {
         loadMonthlyFees();
     }
 }
 
+// 🛑 CRITICAL FIX APPLIED HERE 🛑
 window.loadMonthlyFees = async function () {
     const studentId = document.getElementById('studentSelector').value;
     const ulElement = document.getElementById('monthlyFees');
-    const commButton = document.getElementById('draftCommButton'); // New element to contain the button
     
-    // Clear list and button
-    ulElement.innerHTML = '';
-    commButton.innerHTML = ''; 
+    // Clear list
+    ulElement.innerHTML = '<li>Loading fees...</li>'; 
 
-    if (!studentId) return;
+    if (!studentId) {
+        ulElement.innerHTML = '<li>Select a student to view fees.</li>';
+        return;
+    }
 
+    // 🛑 FIX: Ensure studentData is retrieved before setting the listener 🛑
     const studentData = allApprovedStudents.find(s => s.id === studentId);
 
-    // RTDB Listener for fees
+    if (!studentData) {
+         ulElement.innerHTML = '<li>Error: Student data not found.</li>';
+         return;
+    }
+
+    // RTDB Listener for fees - now using the found studentData object
     onValue(getFeesRef(studentId), (snapshot) => {
         const fees = snapshot.val() || {};
         renderAdminFeeManagement(studentId, fees, studentData);

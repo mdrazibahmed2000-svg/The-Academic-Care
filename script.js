@@ -111,7 +111,7 @@ function showDashboard(isAdmin) {
     }
 }
 
-window.toggleCollapsible = function(id) {
+window.toggleCollapsible = function (id) {
     const content = document.getElementById(id);
     content.classList.toggle('hidden');
 }
@@ -122,7 +122,7 @@ async function checkLoginStatus() {
     // This checks local storage for persistent login information (student ID or 'admin')
     const loginId = localStorage.getItem('appLoginId');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    
+
     if (loginId) {
         if (isAdmin) {
             await initializeAdminPanel();
@@ -144,7 +144,7 @@ async function checkLoginStatus() {
     }
 }
 
-window.login = async function() {
+window.login = async function () {
     const id = document.getElementById('loginId').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const errorElement = document.getElementById('loginError');
@@ -164,7 +164,7 @@ window.login = async function() {
 
 async function handleAdminLogin(password) {
     const errorElement = document.getElementById('loginError');
-    
+
     // Query the admins collection for the password
     const adminQuery = query(getAdminsCollectionRef(), where("password", "==", password));
     const adminSnapshot = await getDocs(adminQuery);
@@ -204,7 +204,7 @@ async function handleStudentLogin(studentId) {
     showDashboard(false);
 }
 
-window.logout = function() {
+window.logout = function () {
     localStorage.removeItem('appLoginId');
     localStorage.removeItem('isAdmin');
     currentStudentData = null;
@@ -215,7 +215,7 @@ window.logout = function() {
 
 // --- Registration Logic ---
 
-window.registerStudent = async function() {
+window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianName = document.getElementById('regGuardianName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
@@ -227,25 +227,25 @@ window.registerStudent = async function() {
         errorElement.textContent = 'Please fill in all fields.';
         return;
     }
-    
+
     try {
         // Use a transaction to safely generate and set the next roll number and Student ID
         const newStudentId = await runTransaction(db, async (transaction) => {
             const counterRef = doc(db, `artifacts/${appId}/public/data/counters`, 'studentRoll');
             const counterDoc = await transaction.get(counterRef);
-            
+
             let nextRoll = 1;
             if (counterDoc.exists()) {
                 nextRoll = counterDoc.data().roll + 1;
             }
-            
+
             const rollString = nextRoll.toString().padStart(3, '0');
-            
+
             // Format ID: S + Year (last 2 digits) + Class (2 digits) + Roll (3 digits)
             const year = new Date().getFullYear().toString().substring(2);
             const classId = studentClass.padStart(2, '0');
             const newId = `S${year}${classId}${rollString}`;
-            
+
             // 1. Update the counter
             transaction.set(counterRef, { roll: nextRoll }, { merge: true });
 
@@ -259,7 +259,7 @@ window.registerStudent = async function() {
                 status: 'pending', // Requires Admin approval
                 registeredAt: Timestamp.now()
             });
-            
+
             return newId;
         });
 
@@ -279,7 +279,7 @@ async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;
     document.getElementById('studentStatus').textContent = studentData.status;
     document.getElementById('studentClass').textContent = studentData.class;
-    
+
     // Listen for real-time updates on fee status
     onSnapshot(getFeesCollectionRef(studentData.id), (snapshot) => {
         const fees = {};
@@ -301,7 +301,7 @@ function renderFeeStatus(fees, ulElement) {
         const feeData = fees[monthKey];
         const li = document.createElement('li');
         li.classList.add('flex', 'justify-between', 'items-center');
-        
+
         let status = 'unpaid';
         let statusClass = 'status-unpaid';
         let details = '';
@@ -346,7 +346,7 @@ function renderPendingStudents(pendingDocs) {
     const ul = document.getElementById('pendingStudentsList');
     ul.innerHTML = '';
     const pendingCountSpan = document.getElementById('pendingCount');
-    
+
     pendingCountSpan.textContent = `(${pendingDocs.length})`;
 
     if (pendingDocs.length === 0) {
@@ -369,7 +369,7 @@ function renderPendingStudents(pendingDocs) {
     });
 }
 
-window.approveStudent = async function(studentId) {
+window.approveStudent = async function (studentId) {
     try {
         await updateDoc(doc(getStudentsCollectionRef(), studentId), {
             status: 'approved',
@@ -385,7 +385,7 @@ function renderStudentSelector(students) {
     const selector = document.getElementById('studentSelector');
     const selectedId = selector.value;
     selector.innerHTML = '<option value="">Select Student...</option>';
-    
+
     // Sort students alphabetically by name
     students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
         const option = document.createElement('option');
@@ -402,7 +402,7 @@ function renderStudentSelector(students) {
     }
 }
 
-window.loadMonthlyFees = async function() {
+window.loadMonthlyFees = async function () {
     const studentId = document.getElementById('studentSelector').value;
     const ulElement = document.getElementById('monthlyFees');
     ulElement.innerHTML = '';
@@ -411,7 +411,7 @@ window.loadMonthlyFees = async function() {
 
     // Find student data to pass guardian details to communication tool
     const studentData = allApprovedStudents.find(s => s.id === studentId);
-    
+
     // Listen for real-time updates on fee status for the selected student
     onSnapshot(getFeesCollectionRef(studentId), (snapshot) => {
         const fees = {};
@@ -435,7 +435,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
         const feeData = fees[monthKey];
         const li = document.createElement('li');
         li.classList.add('fee-item');
-        
+
         let status = 'unpaid';
         let statusClass = 'status-unpaid';
         let details = '';
@@ -448,7 +448,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
                 details = `(Date: ${date}, Method: ${feeData.paymentMethod || 'Cash'})`;
             }
         }
-        
+
         const isPaid = status === 'paid';
 
         li.innerHTML = `
@@ -467,7 +467,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
     }
 }
 
-window.openPaymentModal = function(studentId, monthKey, monthName) {
+window.openPaymentModal = function (studentId, monthKey, monthName) {
     // We use prompt here as a stand-in for a custom modal, since alert/confirm are preferred to be replaced.
     const method = prompt(`Enter payment method for ${monthName} (e.g., Cash, Bank, Mobile Pay):`);
     if (method) {
@@ -475,7 +475,7 @@ window.openPaymentModal = function(studentId, monthKey, monthName) {
     }
 }
 
-window.markPaid = async function(studentId, monthKey, method) {
+window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = doc(getFeesCollectionRef(studentId), monthKey);
     try {
         await setDoc(feeRef, {
@@ -491,12 +491,12 @@ window.markPaid = async function(studentId, monthKey, method) {
     }
 }
 
-window.markBreak = async function(studentId, monthKey, monthName, currentStatus) {
+window.markBreak = async function (studentId, monthKey, monthName, currentStatus) {
     // Custom modal message box preferred over confirm
     if (currentStatus === 'break') {
-         if (!confirm(`Are you sure you want to change ${monthName}'s status back to Unpaid?`)) return;
-         // Deleting the document reverts the status to 'unpaid' (non-existent)
-         await deleteDoc(doc(getFeesCollectionRef(studentId), monthKey));
+        if (!confirm(`Are you sure you want to change ${monthName}'s status back to Unpaid?`)) return;
+        // Deleting the document reverts the status to 'unpaid' (non-existent)
+        await deleteDoc(doc(getFeesCollectionRef(studentId), monthKey));
     } else {
         if (!confirm(`Are you sure you want to mark ${monthName} as a break month? This will clear any existing payment data for this month.`)) return;
         const feeRef = doc(getFeesCollectionRef(studentId), monthKey);
@@ -517,10 +517,18 @@ window.markBreak = async function(studentId, monthKey, monthName, currentStatus)
 
 // Base function for fetching Gemini response
 async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId) {
+    // IMPORTANT: REPLACE THE EMPTY STRING WITH YOUR ACTUAL GEMINI API KEY
     const apiKey = ""; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
     const loader = document.getElementById(loaderId);
     const responseDiv = document.getElementById(responseId);
+
+    // Check if API key is missing
+    if (apiKey === "") {
+        responseDiv.textContent = 'Error: Gemini API key is missing. Cannot generate response.';
+        return;
+    }
+
 
     loader.classList.remove('hidden');
     responseDiv.textContent = 'Generating response...';
@@ -560,7 +568,7 @@ async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId
                     continue; // Skip finally and retry loop
                 }
             } else {
-                 // Non-retryable error
+                // Non-retryable error
                 throw new Error(`API call failed: ${response.statusText} (${response.status})`);
             }
         } catch (e) {
@@ -583,48 +591,50 @@ async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId
 }
 
 
-window.handleStudentQuery = async function() {
+window.handleStudentQuery = async function () {
     const query = document.getElementById('geminiQuery').value.trim();
     if (!query || !currentStudentData) return;
 
     // Format current fee status list for context
     const feeListElement = document.getElementById('feeStatusList');
     const feeContext = Array.from(feeListElement.children).map(li => li.textContent.trim()).join('; ');
-    
+
     const userPrompt = `Student Profile: Name: ${currentStudentData.name}, ID: ${currentStudentData.id}, Class: ${currentStudentData.class}. Current fee status (Jan-current month): ${feeContext}. The student asks: "${query}"`;
-    
+
     const systemPrompt = "Act as a helpful, professional Academic Care Fee Policy Assistant. Base your response only on the provided context or general best practices for school fee queries. Be concise and empathetic.";
-    
+
     await fetchGeminiResponse(userPrompt, systemPrompt, 'geminiLoader', 'geminiResponse');
 }
 
 
-window.handleDraftCommunication = async function(studentId, monthName, status, guardianName, guardianPhone) {
+window.handleDraftCommunication = async function (studentId, monthName, status, guardianName, guardianPhone) {
     document.getElementById('communicationModal').classList.remove('hidden');
-    
+
     // Clear previous draft and show loader
     document.getElementById('draftedCommunication').value = '';
-    
+
     const userPrompt = `Draft a professional and polite communication message (suitable for SMS or email body) for a guardian. Student ID: ${studentId}, Guardian Name: ${guardianName}. The issue is the fee for the month of ${monthName} is currently marked as: ${status}. The guardian's phone number is: ${guardianPhone}. Use a respectful tone.`;
-    
+
     const systemPrompt = "You are a school administrator drafting a polite, formal reminder or notification to a guardian regarding a student's fee status. Keep the message concise (under 5 sentences) and clear. Do not include salutations or closings, just the message body.";
-    
+
     await fetchGeminiResponse(userPrompt, systemPrompt, 'communicationLoader', 'draftedCommunication');
 }
 
 
 // --- Utility Functions ---
 
-window.closeModal = function() {
+window.closeModal = function () {
     document.getElementById('communicationModal').classList.add('hidden');
     document.getElementById('draftedCommunication').value = '';
     document.getElementById('communicationLoader').classList.add('hidden');
 }
 
-window.copyToClipboard = function(elementId) {
+window.copyToClipboard = function (elementId) {
     const copyText = document.getElementById(elementId);
+    // Select the text field
     copyText.select();
-    copyText.setSelectionRange(0, 99999); 
+    copyText.setSelectionRange(0, 99999);
+    // Copy the text inside the text field
     document.execCommand('copy');
     // Custom modal message box preferred over alert
     alert("Message copied to clipboard!");
@@ -632,4 +642,3 @@ window.copyToClipboard = function(elementId) {
 
 // Initialize the app on load
 window.onload = initializeAppAndAuth;
-

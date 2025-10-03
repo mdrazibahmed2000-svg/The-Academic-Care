@@ -9,16 +9,16 @@
 <body>
 
   <!-- Login Page -->
-  <div id="login-page" class="page">
+  <div id="login-page" class="page active">
     <h2>Login</h2>
     <input type="text" id="studentId" placeholder="Enter Student ID or admin">
     <button onclick="login()">Login</button>
-    <button onclick="showRegister()">Register</button>
+    <button class="secondary" onclick="showRegister()">Register</button>
     <p id="loginError" class="error"></p>
   </div>
 
   <!-- Registration Page -->
-  <div id="register-page" class="page hidden">
+  <div id="register-page" class="page">
     <h2>Student Registration</h2>
     <form id="registerForm" onsubmit="event.preventDefault(); registerStudent();">
       <input type="text" id="regName" placeholder="Name">
@@ -27,18 +27,18 @@
       <input type="text" id="regGuardian" placeholder="Guardian Mobile No">
       <button type="submit">Register</button>
     </form>
-    <button onclick="showLogin()">Back to Login</button>
+    <button class="secondary" onclick="showLogin()">Back to Login</button>
   </div>
 
   <!-- Student Dashboard -->
-  <div id="dashboard" class="page hidden">
+  <div id="dashboard" class="page">
     <h2 id="studentName"></h2>
     <div id="studentFees"></div>
-    <button onclick="logout()">Logout</button>
+    <button class="secondary" onclick="logout()">Logout</button>
   </div>
 
   <!-- Admin Panel -->
-  <div id="admin-panel" class="page hidden">
+  <div id="admin-panel" class="page">
     <h2>Admin Panel</h2>
 
     <h3>Pending Students</h3>
@@ -52,14 +52,14 @@
     <ul id="monthlyFees"></ul>
 
     <button onclick="changeAdminPassword()">Change Admin Password</button>
-    <button onclick="logout()">Logout</button>
+    <button class="secondary" onclick="logout()">Logout</button>
   </div>
 
-  <!-- Firebase SDK (compat version, for your JS code) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Firebase SDK (compat version) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  <!-- Your JS (NOT as module) -->
+  <!-- Your JS -->
   <script src="script.js"></script>
 </body>
 </html>

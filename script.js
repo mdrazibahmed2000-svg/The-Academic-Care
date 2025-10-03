@@ -1,9 +1,14 @@
+// ====================================================================
+// CRITICAL: Modular Imports for Firebase SDK
+// ====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 // RTDB Imports
 import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
+// ====================================================================
 // --- Global Firebase and App Configuration (USING YOUR PROVIDED VALUES) ---
+// ====================================================================
 
 const firebaseConfig = {
     // 🛑 YOUR PROVIDED API KEYS & CONFIG 🛑
@@ -22,8 +27,7 @@ let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
 
-// RTDB path is confirmed to be empty ('')
-const RTDB_ROOT_PATH = '';
+const RTDB_ROOT_PATH = ''; // Confirmed root path is empty
 
 
 // Function to safely initialize Firebase and handle authentication
@@ -34,16 +38,16 @@ async function initializeAppAndAuth() {
         db = getDatabase(app); 
         auth = getAuth(app);
 
-        // Ensure session persistence is set before signing in
         await setPersistence(auth, browserSessionPersistence);
         
-        // This is the line that requires Anonymous Auth to be ENABLED
+        // CRITICAL: Sign in anonymously to get an auth.uid for reading/registration
         await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId}`;
+                // This line helps confirm Anonymous Auth is working
+                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId}`; 
                 checkLoginStatus();
             } else {
                 currentUserId = null;
@@ -51,28 +55,21 @@ async function initializeAppAndAuth() {
             }
         });
     } catch (error) {
-        // This is the main error trap for "Firebase setup failed"
         console.error("Firebase initialization or authentication failed:", error);
-        document.getElementById('loginError').textContent = `System Error: Firebase setup failed. Check console (F12) for details. (Ensure Anonymous Auth is enabled).`;
+        document.getElementById('loginError').textContent = `System Error: Firebase setup failed. Check console (F12) for details.`;
         showLogin(); 
     }
 }
 
 // Helper functions for RTDB References
-function getStudentsRef() {
-    return ref(db, `${RTDB_ROOT_PATH}/students`);
-}
-function getAdminsRef() {
-    return ref(db, `${RTDB_ROOT_PATH}/admins`);
-}
-function getFeesRef(studentId) {
-    return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}/fees`);
-}
-function getStudentRef(studentId) {
-    return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}`);
-}
+function getStudentsRef() { return ref(db, `${RTDB_ROOT_PATH}/students`); }
+function getStudentRef(studentId) { return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}`); }
+function getFeesRef(studentId) { return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}/fees`); }
 
+
+// ====================================================================
 // --- View Switching Logic ---
+// ====================================================================
 
 window.showLogin = function () {
     // Reset all form inputs and errors
@@ -80,21 +77,19 @@ window.showLogin = function () {
     document.getElementById('loginError').textContent = '';
     document.getElementById('registerError').textContent = '';
     
-    // Show Login/Initial View
     document.getElementById('initialView').classList.remove('hidden');
     document.getElementById('registerView').classList.add('hidden');
-    document.getElementById('dashboardView').classList.add('hidden'); // CRITICAL: This hides the dashboard
+    document.getElementById('dashboardView').classList.add('hidden'); 
 }
 
 window.showRegister = function () {
     // Clear registration fields
     document.getElementById('regName').value = '';
+    document.getElementById('regGuardianPhone').value = '';
     document.getElementById('regClass').value = '';
     document.getElementById('regRoll').value = '';
-    document.getElementById('regGuardianPhone').value = '';
     document.getElementById('registerError').textContent = '';
 
-    // Show Registration View
     document.getElementById('initialView').classList.add('hidden');
     document.getElementById('registerView').classList.remove('hidden');
 }
@@ -120,7 +115,10 @@ window.toggleCollapsible = function (id) {
     content.classList.toggle('hidden');
 }
 
+
+// ====================================================================
 // --- Auth and Login Logic (RTDB) ---
+// ====================================================================
 
 async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
@@ -128,9 +126,11 @@ async function checkLoginStatus() {
 
     if (loginId) {
         if (isAdmin) {
+            // Admin is logged in: skip DB check, rely on local storage state
             await initializeAdminPanel();
             showDashboard(true);
         } else {
+            // Student login: fetch data
             const studentSnapshot = await get(getStudentRef(loginId));
             
             if (studentSnapshot.exists()) {
@@ -158,12 +158,13 @@ window.login = async function () {
 
     try {
         if (id.toLowerCase() === 'admin') {
+            const adminEmail = prompt("Enter Admin Email:");
+            if (!adminEmail) return;
+
             const adminPassword = prompt("Enter Admin Password:");
-            if (!adminPassword) {
-                errorElement.textContent = 'Admin login cancelled.';
-                return;
-            }
-            await handleAdminLogin(adminPassword);
+            if (!adminPassword) return;
+
+            await handleAdminLoginWithEmail(adminEmail, adminPassword);
         } else {
             await handleStudentLogin(id);
         }
@@ -173,33 +174,27 @@ window.login = async function () {
     }
 }
 
-async function handleAdminLogin(password) {
+// 🛑 THE ADMIN LOGIN FUNCTION 🛑
+async function handleAdminLoginWithEmail(email, password) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
     
-    // CRITICAL: The admin login relies on the 'password' field being indexed in your rules.
-    const adminQuery = query(getAdminsRef(), orderByChild('password'), equalTo(password));
-    const adminSnapshot = await get(adminQuery);
+    try {
+        // Sign in using Firebase Email/Password Auth
+        await signInWithEmailAndPassword(auth, email, password);
 
-    if (!adminSnapshot.exists()) {
-        errorElement.textContent = 'Invalid Admin Password.';
-        return;
+        // If authentication is successful, the user is the Admin (per your requirement).
+        // This relies on the security rules checking the 'sign_in_provider' in the token.
+        localStorage.setItem('appLoginId', 'admin');
+        localStorage.setItem('isAdmin', 'true');
+        
+        await initializeAdminPanel();
+        showDashboard(true);
+
+    } catch (error) {
+        console.error("Admin Email Login failed:", error);
+        errorElement.textContent = `Admin Login failed. Check credentials. Error: ${error.message.replace('Firebase: Error (auth/', '').replace(')', '')}`;
     }
-    
-    let adminFound = false;
-    adminSnapshot.forEach(() => {
-        adminFound = true;
-    });
-
-    if (!adminFound) {
-        errorElement.textContent = 'Invalid Admin Password.';
-        return;
-    }
-
-    localStorage.setItem('appLoginId', 'admin');
-    localStorage.setItem('isAdmin', 'true');
-    await initializeAdminPanel();
-    showDashboard(true);
 }
 
 async function handleStudentLogin(studentId) {
@@ -231,11 +226,15 @@ window.logout = function () {
     localStorage.removeItem('isAdmin');
     currentStudentData = null;
     currentUserId = null;
-    signOut(auth);
+    // CRITICAL: Sign out the currently logged-in user (Admin or Anonymous)
+    signOut(auth); 
     showLogin();
 }
 
+
+// ====================================================================
 // --- Registration Logic ---
+// ====================================================================
 
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
@@ -245,13 +244,11 @@ window.registerStudent = async function () {
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
-    // Stronger client-side validation
     if (!name || !guardianPhone || !studentClass || !studentRoll) {
-        errorElement.textContent = 'Please fill in all required fields (Name, Class, Roll, Phone).';
+        errorElement.textContent = 'Please fill in all required fields.';
         return;
     }
     
-    // Validate phone format (simple check for 7-15 digits)
     if (!/^\d{7,15}$/.test(guardianPhone)) {
         errorElement.textContent = 'Please enter a valid phone number (7-15 digits).';
         return;
@@ -264,7 +261,6 @@ window.registerStudent = async function () {
     const newId = `S${year}${classId}${rollString}`; 
 
     try {
-        // Check if a student with this generated ID already exists
         const existingStudent = await get(getStudentRef(newId));
         if (existingStudent.exists()) {
             errorElement.textContent = `A student with ID ${newId} already exists. Check Roll/Class combination or contact Admin.`;
@@ -278,6 +274,7 @@ window.registerStudent = async function () {
             class: studentClass,
             roll: studentRoll,
             status: 'pending',
+            id: newId, // CRITICAL: Store the ID in the data for security rules
             registeredAt: Date.now()
         });
 
@@ -285,21 +282,23 @@ window.registerStudent = async function () {
         showLogin();
 
     } catch (e) {
-        // Explicit error for registration failure
         console.error("Registration failed: ", e);
         errorElement.textContent = `Registration failed. Please try again. Possible Database/Permission issue. Error: ${e.message}`;
     }
 }
 
-// --- Student Panel Logic and Admin Panel Logic (RTDB) ---
-// (The rest of the code for panels, fees, and Gemini remains the same as it was previously correct.)
+
+// ====================================================================
+// --- Student/Admin Panel Logic (RTDB Listeners) ---
+// ====================================================================
 
 async function initializeStudentPanel(studentData) {
-    document.getElementById('studentIdDisplay').textContent = studentData.id;
+    // 🛑 CRITICAL: Ensure you have these elements in your HTML 🛑
+    document.getElementById('studentIdDisplay').textContent = studentData.id; 
     document.getElementById('studentStatus').textContent = studentData.status;
     document.getElementById('studentClass').textContent = studentData.class;
 
-    // RTDB Listener: Use onValue for real-time updates
+    // RTDB Listener: Use onValue for real-time updates of fees
     onValue(getFeesRef(studentData.id), (snapshot) => {
         const fees = snapshot.val() || {};
         renderFeeStatus(fees, document.getElementById('feeStatusList'));
@@ -390,14 +389,15 @@ function renderPendingStudents(pendingStudents) {
 
 window.approveStudent = async function (studentId) {
     try {
-        // RTDB Update: Update only the 'status' field
         await update(getStudentRef(studentId), {
             status: 'approved',
-            approvedBy: currentUserId,
+            // auth.uid will be the Admin's UID from the Email/Password login
+            approvedBy: auth.currentUser.uid, 
             approvedAt: Date.now()
         });
     } catch (e) {
         console.error("Error approving student:", e);
+        alert("Error approving student. Check Admin write permissions in Firebase rules. Error: " + e.message);
     }
 }
 
@@ -495,11 +495,11 @@ window.markPaid = async function (studentId, monthKey, method) {
             status: 'paid',
             paymentMethod: method,
             paymentDate: Date.now(),
-            recordedBy: currentUserId
+            recordedBy: auth.currentUser.uid // Use Admin's UID
         });
     } catch (e) {
         console.error("Error recording payment: " + e.message);
-        alert("Error recording payment: " + e.message);
+        alert("Error recording payment. Check Admin write permissions in Firebase rules. Error: " + e.message);
     }
 }
 
@@ -513,20 +513,23 @@ window.markBreak = async function (studentId, monthKey, monthName, currentStatus
         try {
             await set(feeRef, {
                 status: 'break',
-                recordedBy: currentUserId,
+                recordedBy: auth.currentUser.uid, // Use Admin's UID
                 recordedAt: Date.now()
             });
         } catch (e) {
             console.error("Error marking break month: " + e.message);
-            alert("Error marking break month: " + e.message);
+            alert("Error marking break month. Check Admin write permissions in Firebase rules. Error: " + e.message);
         }
     }
 }
 
+
+// ====================================================================
 // --- Gemini API Logic and Utility Functions ---
+// (No changes made here, assuming this section was correct)
+// ====================================================================
 
 async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId) {
-    // 🛑 IMPORTANT: REPLACE THE EMPTY STRING WITH YOUR ACTUAL GEMINI API KEY 🛑
     const apiKey = "YOUR_GEMINI_API_KEY_HERE"; 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
     const loader = document.getElementById(loaderId);

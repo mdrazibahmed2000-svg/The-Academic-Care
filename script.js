@@ -1,15 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-// RTDB Imports - Replaced Firestore
-import { getDatabase, ref, get, set, remove, push, update, onValue, query, orderByChild, equalTo, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+// RTDB Imports
+import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
 // --- Global Firebase and App Configuration ---
 
 const firebaseConfig = {
-    // 🛑 FILLED WITH YOUR DETAILS: the-academic-care 🛑
+    // 🛑 YOUR CONFIGURATION DETAILS 🛑
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
-    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", // RTDB requires this URL!
+    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", 
     projectId: "the-academic-care",
     storageBucket: "the-academic-care.firebasestorage.app",
     messagingSenderId: "728354914429",
@@ -17,24 +17,29 @@ const firebaseConfig = {
 };
 
 let app;
-let db; // Now holds the Realtime Database instance
+let db; 
 let auth;
 let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
-// RTDB typically uses simpler paths, so we'll treat 'students', 'admins', 'counters' as root children.
-const appId = 'default-app-id'; // Keeping this but simplifying paths below.
+
+// 🛑 CRITICAL UPDATE: SET THIS TO MATCH YOUR RTDB CONSOLE STRUCTURE 🛑
+// Examples: 
+// If data is at the root: const RTDB_ROOT_PATH = '';
+// If data is under /appData/: const RTDB_ROOT_PATH = 'appData';
+const RTDB_ROOT_PATH = ''; 
+
 
 // Function to safely initialize Firebase and handle authentication
 async function initializeAppAndAuth() {
     try {
-        const config = firebaseConfig; // Assuming global config is used
+        const config = firebaseConfig;
         app = initializeApp(config);
-        db = getDatabase(app); // RTDB Initialization
+        db = getDatabase(app); 
         auth = getAuth(app);
 
         await setPersistence(auth, browserSessionPersistence);
-        await signInAnonymously(auth); // Sign in anonymously for registration/read access
+        await signInAnonymously(auth);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -53,21 +58,21 @@ async function initializeAppAndAuth() {
     }
 }
 
-// Helper functions for RTDB References (using simple root-level paths)
+// Helper functions for RTDB References (now using the configurable path)
 function getStudentsRef() {
-    return ref(db, `students`);
+    return ref(db, `${RTDB_ROOT_PATH}/students`);
 }
 function getAdminsRef() {
-    return ref(db, `admins`);
+    return ref(db, `${RTDB_ROOT_PATH}/admins`);
 }
 function getFeesRef(studentId) {
-    return ref(db, `students/${studentId}/fees`);
+    return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}/fees`);
 }
 function getStudentRef(studentId) {
-    return ref(db, `students/${studentId}`);
+    return ref(db, `${RTDB_ROOT_PATH}/students/${studentId}`);
 }
 function getCounterRef() {
-    return ref(db, `counters/studentRoll`);
+    return ref(db, `${RTDB_ROOT_PATH}/counters/studentRoll`);
 }
 
 // --- View Switching Logic (Remains the same) ---
@@ -107,7 +112,7 @@ window.toggleCollapsible = function (id) {
     content.classList.toggle('hidden');
 }
 
-// --- Auth and Login Logic (Updated for RTDB) ---
+// --- Auth and Login Logic (RTDB) ---
 
 async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
@@ -118,7 +123,6 @@ async function checkLoginStatus() {
             await initializeAdminPanel();
             showDashboard(true);
         } else {
-            // RTDB: Check for student existence
             const studentSnapshot = await get(getStudentRef(loginId));
             
             if (studentSnapshot.exists()) {
@@ -161,7 +165,6 @@ async function handleAdminLogin(password) {
     errorElement.textContent = '';
     
     // RTDB Query: Find admin record where 'password' matches the input.
-    // NOTE: This requires the 'admins' node to be indexed on 'password' in RTDB rules for performance.
     const adminQuery = query(getAdminsRef(), orderByChild('password'), equalTo(password));
     const adminSnapshot = await get(adminQuery);
 
@@ -171,7 +174,18 @@ async function handleAdminLogin(password) {
         return;
     }
     
-    // Since the query succeeded, an admin record exists.
+    // Check if the query returned any children (i.e., a match was found)
+    let adminFound = false;
+    adminSnapshot.forEach(() => {
+        adminFound = true;
+    });
+
+    if (!adminFound) {
+        errorElement.textContent = 'Invalid Admin Password.';
+        console.error("Admin Login Failed: Query returned snapshot but no children (Indexing issue?).");
+        return;
+    }
+
     localStorage.setItem('appLoginId', 'admin');
     localStorage.setItem('isAdmin', 'true');
     await initializeAdminPanel();
@@ -188,7 +202,7 @@ async function handleStudentLogin(studentId) {
 
     if (!studentSnapshot.exists()) {
         errorElement.textContent = 'Invalid Student ID. Please register.';
-        console.error("Student Login Failed: Student ID not found in database.");
+        console.error("Student Login Failed: Student ID not found in database at:", getStudentRef(studentId).toString());
         return;
     }
 
@@ -216,7 +230,7 @@ window.logout = function () {
     showLogin();
 }
 
-// --- Registration Logic (Updated for RTDB Transaction) ---
+// --- Registration Logic (RTDB Transaction) ---
 
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
@@ -235,13 +249,11 @@ window.registerStudent = async function () {
         // RTDB Transaction to safely increment the roll number
         const newStudentIdResult = await runTransaction(getCounterRef(), (currentData) => {
             let nextRoll = 1;
-            if (currentData) {
+            // Check if data exists and has a numeric 'roll' property
+            if (currentData && typeof currentData.roll === 'number') { 
                 nextRoll = currentData.roll + 1;
-            } else {
-                currentData = { roll: 0 }; // Initialize if first time
             }
-            // Return the updated data to be saved to the database
-            return { roll: nextRoll };
+            return { roll: nextRoll }; // Returns the data to be saved to the database
         });
 
         if (newStudentIdResult.committed) {
@@ -264,16 +276,16 @@ window.registerStudent = async function () {
             alert(`Registration successful! Your Student ID is ${newId}. Please wait for admin approval.`);
             showLogin();
         } else {
-            throw new Error("Counter transaction failed to commit.");
+            throw new Error("Counter transaction failed to commit (Aborted or blocked by rules).");
         }
 
     } catch (e) {
         console.error("Registration failed: ", e);
-        errorElement.textContent = 'Registration failed. Please try again.';
+        errorElement.textContent = `Registration failed. Please try again. Error: ${e.message}`;
     }
 }
 
-// --- Student Panel Logic (Updated for RTDB) ---
+// --- Student Panel Logic (RTDB) ---
 
 async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id;
@@ -287,7 +299,6 @@ async function initializeStudentPanel(studentData) {
     });
 }
 
-// renderFeeStatus function is mostly data processing and remains the same
 function renderFeeStatus(fees, ulElement) {
     ulElement.innerHTML = '';
     const today = new Date();
@@ -324,7 +335,7 @@ function renderFeeStatus(fees, ulElement) {
     }
 }
 
-// --- Admin Panel Logic (Updated for RTDB) ---
+// --- Admin Panel Logic (RTDB) ---
 
 async function initializeAdminPanel() {
     // RTDB Listener for pending students
@@ -385,7 +396,6 @@ window.approveStudent = async function (studentId) {
     }
 }
 
-// renderStudentSelector remains the same (handles local array)
 function renderStudentSelector(students) {
     const selector = document.getElementById('studentSelector');
     const selectedId = selector.value;
@@ -421,7 +431,50 @@ window.loadMonthlyFees = async function () {
     });
 }
 
-// renderAdminFeeManagement remains the same
+function renderAdminFeeManagement(studentId, fees, studentData) {
+    const ulElement = document.getElementById('monthlyFees');
+    ulElement.innerHTML = '';
+    const today = new Date();
+    const currentMonthIndex = today.getMonth();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    for (let i = 0; i <= currentMonthIndex; i++) {
+        const monthName = monthNames[i];
+        const monthKey = monthName.toLowerCase();
+        const feeData = fees[monthKey];
+        const li = document.createElement('li');
+        li.classList.add('fee-item');
+
+        let status = 'unpaid';
+        let statusClass = 'status-unpaid';
+        let details = '';
+
+        if (feeData) {
+            status = feeData.status;
+            statusClass = `status-${status}`;
+            if (status === 'paid') {
+                const date = feeData.paymentDate ? new Date(feeData.paymentDate).toLocaleDateString() : 'N/A';
+                details = `(Date: ${date}, Method: ${feeData.paymentMethod || 'Cash'})`;
+            }
+        }
+
+        const isPaid = status === 'paid';
+
+        li.innerHTML = `
+            <div class="fee-info">
+                <strong>${monthName}:</strong> 
+                <span class="${statusClass}">${status}</span>
+                <span class="fee-details">${details}</span>
+            </div>
+            <div class="fee-actions">
+                ${!isPaid ? `<button class="mark-paid-btn" onclick="openPaymentModal('${studentId}', '${monthKey}', '${monthName}')">Mark Paid</button>` : ''}
+                <button class="break-btn" onclick="markBreak('${studentId}', '${monthKey}', '${monthName}', '${status}')">Mark Break</button>
+                ${status !== 'paid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="handleDraftCommunication('${studentId}', '${monthName}', '${status}', '${studentData.guardianName}', '${studentData.guardianPhone}')">Draft Comm. ✨</button>` : ''}
+            </div>
+        `;
+        ulElement.appendChild(li);
+    }
+}
 
 window.openPaymentModal = function (studentId, monthKey, monthName) {
     const method = prompt(`Enter payment method for ${monthName} (e.g., Cash, Bank, Mobile Pay):`);
@@ -433,7 +486,6 @@ window.openPaymentModal = function (studentId, monthKey, monthName) {
 window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = ref(getFeesRef(studentId), monthKey);
     try {
-        // RTDB Set: Writes the new fee record
         await set(feeRef, {
             status: 'paid',
             paymentMethod: method,
@@ -450,11 +502,10 @@ window.markBreak = async function (studentId, monthKey, monthName, currentStatus
     const feeRef = ref(getFeesRef(studentId), monthKey);
     if (currentStatus === 'break') {
         if (!confirm(`Are you sure you want to change ${monthName}'s status back to Unpaid?`)) return;
-        await remove(feeRef); // RTDB Remove
+        await remove(feeRef);
     } else {
         if (!confirm(`Are you sure you want to mark ${monthName} as a break month? This will clear any existing payment data for this month.`)) return;
         try {
-            // RTDB Set: Sets the status to 'break'
             await set(feeRef, {
                 status: 'break',
                 recordedBy: currentUserId,
@@ -467,10 +518,119 @@ window.markBreak = async function (studentId, monthKey, monthName, currentStatus
     }
 }
 
-// --- Gemini API Logic and Utility Functions (Not dependent on database type, so they remain the same) ---
+// --- Gemini API Logic and Utility Functions (These were not dependent on database type) ---
 
-// ... (fetchGeminiResponse, handleStudentQuery, handleDraftCommunication, closeModal, copyToClipboard functions go here) ...
-// NOTE: Remember to insert your Gemini API Key in fetchGeminiResponse!
+async function fetchGeminiResponse(userQuery, systemPrompt, loaderId, responseId) {
+    // 🛑 IMPORTANT: REPLACE THE EMPTY STRING WITH YOUR ACTUAL GEMINI API KEY 🛑
+    const apiKey = ""; 
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+    const loader = document.getElementById(loaderId);
+    const responseDiv = document.getElementById(responseId);
+
+    if (apiKey === "") {
+        responseDiv.textContent = 'Error: Gemini API key is missing. Cannot generate response.';
+        return;
+    }
+
+    loader.classList.remove('hidden');
+    responseDiv.textContent = 'Generating response...';
+
+    const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        tools: [{ "google_search": {} }],
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+    };
+
+    let response;
+    let retries = 0;
+    const maxRetries = 3;
+    const initialDelay = 1000;
+
+    while (retries < maxRetries) {
+        try {
+            response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || 'Error: Could not retrieve text.';
+                responseDiv.textContent = text;
+                return;
+            } else if (response.status === 429 || response.status >= 500) {
+                if (retries < maxRetries - 1) {
+                    const delay = initialDelay * Math.pow(2, retries);
+                    console.warn(`API call failed with status ${response.status}. Retrying in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    retries++;
+                    continue;
+                }
+            } else {
+                throw new Error(`API call failed: ${response.statusText} (${response.status})`);
+            }
+        } catch (e) {
+            console.error("Gemini API Error:", e);
+            responseDiv.textContent = `Error: Failed to connect to AI assistant. (${e.message})`;
+            break;
+        } finally {
+            if (retries === maxRetries || response?.ok) {
+                loader.classList.add('hidden');
+            }
+        }
+    }
+
+    if (retries === maxRetries) {
+        responseDiv.textContent = 'Error: API request failed after multiple retries.';
+        loader.classList.add('hidden');
+    }
+}
+
+
+window.handleStudentQuery = async function () {
+    const query = document.getElementById('geminiQuery').value.trim();
+    if (!query || !currentStudentData) return;
+
+    const feeListElement = document.getElementById('feeStatusList');
+    const feeContext = Array.from(feeListElement.children).map(li => li.textContent.trim()).join('; ');
+
+    const userPrompt = `Student Profile: Name: ${currentStudentData.name}, ID: ${currentStudentData.id}, Class: ${currentStudentData.class}. Current fee status (Jan-current month): ${feeContext}. The student asks: "${query}"`;
+
+    const systemPrompt = "Act as a helpful, professional Academic Care Fee Policy Assistant. Base your response only on the provided context or general best practices for school fee queries. Be concise and empathetic.";
+
+    await fetchGeminiResponse(userPrompt, systemPrompt, 'geminiLoader', 'geminiResponse');
+}
+
+
+window.handleDraftCommunication = async function (studentId, monthName, status, guardianName, guardianPhone) {
+    document.getElementById('communicationModal').classList.remove('hidden');
+
+    document.getElementById('draftedCommunication').value = '';
+
+    const userPrompt = `Draft a professional and polite communication message (suitable for SMS or email body) for a guardian. Student ID: ${studentId}, Guardian Name: ${guardianName}. The issue is the fee for the month of ${monthName} is currently marked as: ${status}. The guardian's phone number is: ${guardianPhone}. Use a respectful tone.`;
+
+    const systemPrompt = "You are a school administrator drafting a polite, formal reminder or notification to a guardian regarding a student's fee status. Keep the message concise (under 5 sentences) and clear. Do not include salutations or closings, just the message body.";
+
+    await fetchGeminiResponse(userPrompt, systemPrompt, 'communicationLoader', 'draftedCommunication');
+}
+
+
+// --- Utility Functions ---
+
+window.closeModal = function () {
+    document.getElementById('communicationModal').classList.add('hidden');
+    document.getElementById('draftedCommunication').value = '';
+    document.getElementById('communicationLoader').classList.add('hidden');
+}
+
+window.copyToClipboard = function (elementId) {
+    const copyText = document.getElementById(elementId);
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    alert("Message copied to clipboard!");
+}
 
 // Initialize the app on load
 window.onload = initializeAppAndAuth;

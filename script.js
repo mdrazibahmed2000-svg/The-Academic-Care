@@ -170,14 +170,6 @@ function approveStudent(studentId) {
     });
 }
 
-function markPaid(studentId) {
-    if (!auth.currentUser) return logout();
-    database.ref('students/' + studentId + '/feeStatus').set("paid", function() {
-        alert("💰 Student " + studentId + " fee marked as paid!");
-        loadAdminPanel();
-    });
-}
-
 function initializeMonthlyFees(studentId) {
     if (!auth.currentUser) return;
     var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -229,7 +221,7 @@ function markMonthPaid(studentId, month) {
     });
 }
 
-// NEW FUNCTION: Mark Month as Break (saves as a simple string)
+// Mark Month as Break (saves as a simple string)
 function markMonthBreak(studentId, month) {
     if (!auth.currentUser) return logout();
     database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
@@ -295,7 +287,7 @@ function loadStudentFees(studentId) {
 }
 
 
-// Student Dashboard Display - Chronological, Current Month Limit, New Header, Colors, and Date
+// Student Dashboard Display - FINAL STRUCTURE AND CONTENT
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
@@ -303,7 +295,6 @@ function loadStudentDashboard(studentId) {
     ];
     
     var currentDate = new Date();
-    // Use the current year, since the payment system doesn't account for year rollover yet
     var currentMonthIndex = currentDate.getMonth(); 
     
     database.ref('students/' + studentId).once('value').then(function(snapshot) {
@@ -311,18 +302,26 @@ function loadStudentDashboard(studentId) {
 
         var student = snapshot.val();
 
-        // --- NEW HEADER STRUCTURE (Fixed sizing in CSS) ---
+        // --- 1. SCHOOL NAME HEADER (First Line) ---
         var headerHTML = '<h2>The Academic Care</h2>';
         headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
-        headerHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
-        headerHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
-        headerHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
-        headerHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
-
         document.getElementById("studentName").innerHTML = headerHTML;
         
-        // --- MONTHLY FEES DISPLAY ---
-        var feesHTML = '<h3>Monthly Fees:</h3><ul>';
+        
+        // --- 2. MY PROFILE SECTION (Second Line, Centered) ---
+        var profileHTML = '<div class="profile-box">';
+        profileHTML += '<h3>My Profile</h3>'; 
+        profileHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
+        profileHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
+        profileHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
+        profileHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
+        profileHTML += '</div>';
+
+        document.getElementById("studentFees").innerHTML = profileHTML;
+
+
+        // --- 3. TUITION FEE STATUS DISPLAY (Third Line) ---
+        var feesHTML = '<h3>Tuition Fee Status:</h3><ul>';
         var fees = student.fees || {}; 
         
         // Iterate only up to the current month index (limits display to past and current months)
@@ -348,6 +347,8 @@ function loadStudentDashboard(studentId) {
         }
         
         feesHTML += '</ul>';
-        document.getElementById("studentFees").innerHTML = feesHTML;
+        
+        // Append the fees status right after the profile box
+        document.getElementById("studentFees").innerHTML += feesHTML;
     });
 }

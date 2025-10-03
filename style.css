@@ -6,21 +6,18 @@
     /* Blue (Login/Mark Paid default) */
     --primary-hover: #0056b3;
     --secondary-color: #6c757d;
-    /* Gray (Logout/Default Action) */
+    /* Gray (Register/Logout) */
     --background-color: #f8f9fa;
-    /* Light Gray */
     --card-background: #ffffff;
-    /* White */
     --border-color: #dee2e6;
-    /* ENHANCED STATUS COLORS FOR CLEAR VISIBILITY */
     --success-color: #1a7a40;
-    /* Deep Forest Green (Paid Status) */
+    /* Green */
     --danger-color: #c82333;
-    /* Strong Crimson Red (Unpaid Status & Close Button) */
+    /* Red */
     --warning-color: #f0ad4e;
-    /* Visible Amber/Orange (Break Status & Button) */
+    /* Orange */
     --info-color: #17a2b8;
-    /* Cyan Blue (Draft Communication) */
+    /* Cyan */
 }
 
 /* General Body and Page Structure */
@@ -38,21 +35,21 @@ body {
 
 .page {
     background-color: var(--card-background);
-    padding: 30px; /* Increased padding */
+    padding: 30px; 
     margin: 0 10px 20px 10px;
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     width: 100%;
-    max-width: 400px; /* Adjusted to better match the typical mobile width shown */
+    max-width: 400px;
     box-sizing: border-box;
 }
 
-/* Hides content by default, used for collapsible sections and Modals */
+/* Hides content by default */
 .hidden {
     display: none !important;
 }
 
-/* Headings: Adjusted for the login screen to match the image style */
+/* Headings: Styled for the clean login look */
 h2 {
     color: #333; 
     text-align: center;
@@ -69,38 +66,6 @@ h3 {
     padding-bottom: 5px;
 }
 
-/* --- COLLAPSIBLE SECTION STYLING --- */
-
-.collapsible-header {
-    cursor: pointer;
-    margin-top: 15px !important;
-    background-color: #e9ecef;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    font-size: 1.1em;
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.collapsible-content {
-    border: 1px solid var(--border-color);
-    border-top: none;
-    padding: 15px;
-    border-radius: 0 0 8px 8px;
-    margin-bottom: 15px;
-    background-color: #f8f9fa;
-}
-
-.collapsible-content p {
-    font-size: 1em;
-    margin: 5px 0;
-    color: #333;
-}
-
 /* Form Elements and Inputs: Match the size and style of the image input */
 input[type="text"],
 input[type="number"],
@@ -109,23 +74,23 @@ input[type="password"],
 select,
 textarea {
     width: 100%;
-    padding: 15px 12px; /* Increased padding to match image */
+    padding: 15px 12px;
     margin-bottom: 15px;
     border: 1px solid #ced4da;
     border-radius: 6px;
     box-sizing: border-box;
-    font-size: 1.1em; /* Increased font size */
+    font-size: 1.1em;
 }
 
 /* Generic Button Styling (Applies to all full-width buttons) */
 button {
     width: 100%;
-    padding: 15px 15px; /* Increased padding to match image */
+    padding: 15px 15px;
     margin-top: 10px;
     border: none;
     border-radius: 6px;
     color: #fff;
-    background-color: transparent; /* Set to transparent to force specific overrides */
+    background-color: transparent;
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
@@ -138,7 +103,7 @@ button:hover {
     transform: translateY(-1px);
 }
 
-/* --- Specific Full-Width Button Color Overrides (Updated for Login Image) --- */
+/* --- Specific Full-Width Button Color Overrides --- */
 
 /* Login Button (Blue) */
 #loginForm button[type="submit"] {
@@ -176,7 +141,6 @@ button:hover {
     background-color: #5a6268;
 }
 
-
 /* Error Messages */
 .error {
     color: var(--danger-color);
@@ -185,7 +149,7 @@ button:hover {
     font-weight: bold;
 }
 
-/* List Styling (Admin and Student Fees) */
+/* List Styling */
 ul {
     list-style: none;
     padding: 0;
@@ -201,7 +165,7 @@ li {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* --- FEE STATUS COLOR CODING --- */
+/* Fee Status Coloring */
 .status-paid {
     color: var(--success-color);
     font-weight: 700;
@@ -217,8 +181,7 @@ li {
     font-weight: 700;
 }
 
-/* --- ADMIN PANEL FEE MANAGEMENT STYLING --- */
-
+/* Admin Fee Management Styles */
 #monthlyFees .fee-item {
     display: flex;
     justify-content: space-between;
@@ -242,12 +205,6 @@ li {
     margin-top: 5px;
 }
 
-@media (min-width: 400px) {
-    .fee-actions {
-        margin-top: 0;
-    }
-}
-
 .fee-item button {
     width: auto;
     padding: 7px 12px;
@@ -255,64 +212,17 @@ li {
     font-size: 13px;
     flex-shrink: 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: var(--secondary-color);
-}
-
-.fee-item button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .fee-item .mark-paid-btn {
     background-color: var(--primary-color);
 }
-
-.fee-item .mark-paid-btn:hover {
-    background-color: var(--primary-hover);
-}
-
 .fee-item .break-btn {
     background-color: var(--warning-color);
     color: #333;
 }
-
-.fee-item .break-btn:hover {
-    background-color: #e09930;
-}
-
 .fee-item .bg-blue-500 {
     background-color: var(--info-color) !important;
-}
-
-.fee-item .bg-blue-500:hover {
-    background-color: #138496 !important;
-}
-
-.fee-details {
-    display: block;
-    font-size: 0.85em;
-    color: #555;
-    margin-top: 3px;
-}
-
-/* --- Gemini Feature Styling --- */
-#gemini-query-section {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #e6f7ff;
-    border: 1px solid #b3e0ff;
-    border-radius: 8px;
-}
-
-#geminiResponse {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    white-space: pre-wrap;
-    font-size: 0.9em;
-    min-height: 50px;
 }
 
 /* Loader */
@@ -330,7 +240,6 @@ li {
     0% {
         transform: rotate(0deg);
     }
-
     100% {
         transform: rotate(360deg);
     }
@@ -359,28 +268,7 @@ li {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 
-.modal-content h3 {
-    margin-top: 0;
-    border-bottom: 2px solid var(--primary-color);
-}
-
-#draftedCommunication {
-    width: 100%;
-    height: 200px;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    box-sizing: border-box;
-    resize: vertical;
-    font-family: monospace;
-    background-color: #f4f4f4;
-}
-
 .close-button {
     background-color: var(--danger-color) !important;
     margin-top: 15px;
-}
-
-.close-button:hover {
-    background-color: #a81c2d !important;
 }

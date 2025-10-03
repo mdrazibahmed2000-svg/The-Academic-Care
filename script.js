@@ -5,7 +5,7 @@ import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnap
 // --- Global Firebase and App Configuration ---
 
 const firebaseConfig = {
-    // 🛑 IMPORTANT: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION (The Academic Care) 🛑
+    // 🛑 FILLED WITH YOUR DETAILS: the-academic-care 🛑
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
     projectId: "the-academic-care",
@@ -20,7 +20,8 @@ let auth;
 let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// This appId is crucial for the Firestore path structure (e.g., artifacts/default-app-id/public/data/students)
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; 
 
 // Function to safely initialize Firebase and handle authentication
 async function initializeAppAndAuth() {
@@ -106,7 +107,7 @@ window.toggleCollapsible = function (id) {
     content.classList.toggle('hidden');
 }
 
-// --- Auth and Login Logic ---
+// --- Auth and Login Logic (Includes console logging for debugging) ---
 
 async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
@@ -142,6 +143,7 @@ window.login = async function () {
     }
 
     if (id.toLowerCase() === 'admin') {
+        // Prompts the user for password
         const adminPassword = prompt("Enter Admin Password:");
         if (!adminPassword) {
             errorElement.textContent = 'Admin login cancelled.';
@@ -155,12 +157,15 @@ window.login = async function () {
 
 async function handleAdminLogin(password) {
     const errorElement = document.getElementById('loginError');
+    errorElement.textContent = '';
 
+    // Query Firestore for an admin document with the matching password
     const adminQuery = query(getAdminsCollectionRef(), where("password", "==", password));
     const adminSnapshot = await getDocs(adminQuery);
 
     if (adminSnapshot.empty) {
         errorElement.textContent = 'Invalid Admin Password.';
+        console.error("Admin Login Failed: No admin document matched the entered password.");
         return;
     }
 
@@ -168,20 +173,25 @@ async function handleAdminLogin(password) {
     localStorage.setItem('isAdmin', 'true');
     await initializeAdminPanel();
     showDashboard(true);
+    console.log("Admin Login Successful");
 }
 
 async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
+    errorElement.textContent = '';
+
     const studentDoc = await getDoc(doc(getStudentsCollectionRef(), studentId));
 
     if (!studentDoc.exists()) {
         errorElement.textContent = 'Invalid Student ID. Please register.';
+        console.error("Student Login Failed: Student ID not found in database.");
         return;
     }
 
     const data = studentDoc.data();
     if (data.status === 'pending') {
         errorElement.textContent = 'Registration pending admin approval.';
+        console.error("Student Login Failed: Status is pending.");
         return;
     }
 
@@ -190,6 +200,7 @@ async function handleStudentLogin(studentId) {
     localStorage.setItem('isAdmin', 'false');
     await initializeStudentPanel(currentStudentData);
     showDashboard(false);
+    console.log("Student Login Successful:", studentId);
 }
 
 window.logout = function () {

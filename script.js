@@ -36,7 +36,7 @@ async function initializeAppAndAuth() {
 
         await setPersistence(auth, browserSessionPersistence);
         
-        // This is the line that fails if Anonymous Auth is DISABLED in Firebase Console
+        // This is the line that requires Anonymous Auth to be ENABLED
         await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
@@ -50,10 +50,9 @@ async function initializeAppAndAuth() {
             }
         });
     } catch (error) {
-        // This catches the error if Firebase initialization or Anonymous sign-in fails
+        // CRITICAL: If Firebase setup fails (e.g., bad config or disabled Anonymous Auth)
         console.error("Firebase initialization or authentication failed:", error);
-        document.getElementById('loginError').textContent = 'Firebase setup failed. Check console (F12) for details.';
-        // If the Firebase connection fails, we call showLogin() here to at least try and hide the dashboard.
+        document.getElementById('loginError').textContent = `System Error: Firebase setup failed. Check console (F12) and ensure config & Anonymous Auth are correct.`;
         showLogin(); 
     }
 }
@@ -83,7 +82,7 @@ window.showLogin = function () {
     // Show Login/Initial View
     document.getElementById('initialView').classList.remove('hidden');
     document.getElementById('registerView').classList.add('hidden');
-    document.getElementById('dashboardView').classList.add('hidden'); // CRITICAL: This hides the dashboard
+    document.getElementById('dashboardView').classList.add('hidden');
 }
 
 window.showRegister = function () {
@@ -146,25 +145,32 @@ async function checkLoginStatus() {
     }
 }
 
+// FIX: Improved error handling and explicit function calls
 window.login = async function () {
     const id = document.getElementById('loginId').value.trim();
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
     if (!id) {
-        errorElement.textContent = 'Please enter Student ID or \'admin\'.';
+        errorElement.textContent = 'Please enter Student ID or \'admin\' to proceed.';
         return;
     }
 
-    if (id.toLowerCase() === 'admin') {
-        const adminPassword = prompt("Enter Admin Password:");
-        if (!adminPassword) {
-            errorElement.textContent = 'Admin login cancelled.';
-            return;
+    try {
+        if (id.toLowerCase() === 'admin') {
+            const adminPassword = prompt("Enter Admin Password:");
+            if (!adminPassword) {
+                errorElement.textContent = 'Admin login cancelled.';
+                return;
+            }
+            await handleAdminLogin(adminPassword);
+        } else {
+            await handleStudentLogin(id);
         }
-        await handleAdminLogin(adminPassword);
-    } else {
-        await handleStudentLogin(id);
+    } catch(e) {
+        // Generic catch for Firebase network/permission errors during login
+        console.error("Login failed unexpectedly:", e);
+        errorElement.textContent = `Login failed. Check internet connection or admin setup. Error: ${e.message}`;
     }
 }
 
@@ -204,7 +210,7 @@ async function handleStudentLogin(studentId) {
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
-        errorElement.textContent = 'Invalid Student ID. Please register.';
+        errorElement.textContent = `Student ID '${studentId}' not found. Please register.`;
         return;
     }
 
@@ -230,22 +236,28 @@ window.logout = function () {
     showLogin();
 }
 
-// --- Registration Logic (Uses Roll, No Guardian Name) ---
+// --- Registration Logic ---
 
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
     const studentClass = document.getElementById('regClass').value.trim();
-    const studentRoll = document.getElementById('regRoll').value.trim(); // Reads Roll Number
+    const studentRoll = document.getElementById('regRoll').value.trim(); 
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
 
-    // Check for all required fields
+    // FIX: Stronger client-side validation for empty fields
     if (!name || !guardianPhone || !studentClass || !studentRoll) {
         errorElement.textContent = 'Please fill in all required fields (Name, Class, Roll, Phone).';
         return;
     }
     
+    // Validate phone format (simple check for 7-15 digits)
+    if (!/^\d{7,15}$/.test(guardianPhone)) {
+        errorElement.textContent = 'Please enter a valid phone number (7-15 digits).';
+        return;
+    }
+
     // --- Create Unique Student ID based on Year, Class, and Roll ---
     const rollString = studentRoll.padStart(3, '0');
     const year = new Date().getFullYear().toString().substring(2);
@@ -274,8 +286,9 @@ window.registerStudent = async function () {
         showLogin();
 
     } catch (e) {
+        // FIX: Explicit error for registration failure
         console.error("Registration failed: ", e);
-        errorElement.textContent = `Registration failed. Please try again. Error: ${e.message}`;
+        errorElement.textContent = `Registration failed. Please try again. Possible Database/Permission issue. Error: ${e.message}`;
     }
 }
 

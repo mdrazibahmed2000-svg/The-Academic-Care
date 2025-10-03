@@ -1,4 +1,4 @@
-// --- COMPLETE, FINAL, AND CORRECTED script.js (with Break System and Colors) ---
+// --- COMPLETE, FINAL, AND CORRECTED script.js ---
 
 // Firebase config (Use your actual configuration)
 var firebaseConfig = {
@@ -18,7 +18,16 @@ var database = firebase.database();
 var auth = firebase.auth(); 
 var currentStudent = "";
 
-// Utility function to get the correct CSS class for status
+// Utility function to get the current date in DD-MM-YYYY format
+function getCurrentDate() {
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+    const yyyy = today.getFullYear();
+    return dd + '-' + mm + '-' + yyyy;
+}
+
+// Utility function to get the correct CSS class for status (CRITICAL FOR COLORS)
 function getStatusClass(status) {
     if (status === "paid") return "status-paid";
     if (status === "unpaid") return "status-unpaid";
@@ -174,6 +183,7 @@ function initializeMonthlyFees(studentId) {
     var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     var updates = {};
     months.forEach(function(m) {
+        // Status is initialized as a simple string
         updates[m] = "unpaid";
     });
     database.ref('students/' + studentId + '/fees').set(updates);
@@ -192,7 +202,43 @@ function loadStudentFeesDropdown() {
     });
 }
 
-// Admin Fee Management Display - Chronological, Mark Paid/Break Buttons and Colors
+// Updated function to mark payment status, save date, AND save payment method
+function markMonthPaid(studentId, month) {
+    if (!auth.currentUser) return logout();
+    
+    // Prompt the admin for the payment method
+    let method = prompt("Enter payment method for " + month + " (bKash, Nagad, or Cash):");
+    
+    // Basic validation
+    if (!method) {
+        alert("Payment method is required. Payment canceled.");
+        return;
+    }
+    
+    // Create the payment record object
+    const paymentRecord = {
+        status: "paid",
+        date: getCurrentDate(),
+        method: method.trim() // Save the method provided by the admin
+    };
+    
+    // Update the database
+    database.ref('students/' + studentId + '/fees/' + month).set(paymentRecord, function() {
+        alert("Payment for " + month + " recorded successfully!");
+        loadStudentFees(studentId);
+    });
+}
+
+// NEW FUNCTION: Mark Month as Break (saves as a simple string)
+function markMonthBreak(studentId, month) {
+    if (!auth.currentUser) return logout();
+    database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
+        loadStudentFees(studentId);
+    });
+}
+
+
+// Admin Fee Management Display - Chronological, Mark Paid/Break Buttons and Colors (Now includes Payment Method)
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
@@ -213,21 +259,29 @@ function loadStudentFees(studentId) {
         
         chronologicalMonths.forEach(function(month) {
             if (fees.hasOwnProperty(month)) {
-                var status = fees[month];
-                var statusClass = getStatusClass(status);
                 
-                // Set the status text to be colored
+                let status = fees[month];
+                let dateMethodDisplay = '';
+                
+                // Check if status is an object (meaning it's paid with date/method)
+                if (typeof status === 'object' && status !== null && status.status) {
+                    // Display both the date and the method for paid status
+                    dateMethodDisplay = ` (Date: ${status.date}, Method: ${status.method})`;
+                    status = status.status; // Get the string status for class check
+                }
+
+                var statusClass = getStatusClass(status);
                 var statusText = `<span class="${statusClass}">${status}</span>`;
 
                 // Add both Mark Paid and Mark Break buttons
-                html += '<li class="fee-item">' + month + ': ' + statusText + ' ';
+                html += '<li class="fee-item">' + month + ': ' + statusText + dateMethodDisplay + ' ';
                 
-                // Only show buttons if not already on a break status
+                // Only show Mark Break button if not already on a break status
                 if(status !== 'break') {
                     html += `<button class="break-btn" onclick="markMonthBreak('${studentId}','${month}')">Mark Break</button>`;
                 }
                 
-                // Only show Mark Paid button if not paid or on break
+                // Mark Paid button is only shown if status is NOT paid or break
                 if(status !== 'paid' && status !== 'break') {
                     html += `<button class="mark-paid-btn" onclick="markMonthPaid('${studentId}','${month}')">Mark Paid</button>`;
                 }
@@ -240,23 +294,8 @@ function loadStudentFees(studentId) {
     });
 }
 
-function markMonthPaid(studentId, month) {
-    if (!auth.currentUser) return logout();
-    database.ref('students/' + studentId + '/fees/' + month).set("paid", function() {
-        loadStudentFees(studentId);
-    });
-}
 
-// NEW FUNCTION: Mark Month as Break
-function markMonthBreak(studentId, month) {
-    if (!auth.currentUser) return logout();
-    database.ref('students/' + studentId + '/fees/' + month).set("break", function() {
-        loadStudentFees(studentId);
-    });
-}
-
-
-// Student Dashboard Display - Chronological, Current Month Limit, New Header, and Colors
+// Student Dashboard Display - Chronological, Current Month Limit, New Header, Colors, and Date
 function loadStudentDashboard(studentId) {
     var chronologicalMonths = [
         "January", "February", "March", "April", "May", "June", 
@@ -264,6 +303,7 @@ function loadStudentDashboard(studentId) {
     ];
     
     var currentDate = new Date();
+    // Use the current year, since the payment system doesn't account for year rollover yet
     var currentMonthIndex = currentDate.getMonth(); 
     
     database.ref('students/' + studentId).once('value').then(function(snapshot) {
@@ -271,7 +311,7 @@ function loadStudentDashboard(studentId) {
 
         var student = snapshot.val();
 
-        // --- NEW HEADER STRUCTURE ---
+        // --- NEW HEADER STRUCTURE (Fixed sizing in CSS) ---
         var headerHTML = '<h2>The Academic Care</h2>';
         headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
         headerHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
@@ -290,10 +330,20 @@ function loadStudentDashboard(studentId) {
             var month = chronologicalMonths[i];
             
             if (fees.hasOwnProperty(month)) {
-                var status = fees[month];
-                var statusClass = getStatusClass(status); // Get color class
                 
-                feesHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + '</span></li>';
+                let status = fees[month];
+                let dateDisplay = '';
+                
+                // Check if status is an object (meaning it's paid with date/method)
+                if (typeof status === 'object' && status !== null && status.status) {
+                    dateDisplay = ` (Paid on: ${status.date})`; // Only display date, not method
+                    status = status.status; // Get the string status for class check
+                }
+
+                var statusClass = getStatusClass(status); 
+                
+                // Status text is wrapped in <span> with the color class
+                feesHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + dateDisplay + '</span></li>';
             }
         }
         

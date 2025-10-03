@@ -305,7 +305,7 @@ async function initializeStudentPanel(studentData) {
     });
 }
 
-// 🛑 UPDATED FUNCTION: Abbreviated Month Names, Visual Status, Break Request Button 🛑
+// 🛑 STUDENT FUNCTION: Abbreviated Month Names, Visual Status, Break Request Button 🛑
 function renderFeeStatus(fees, ulElement) {
     ulElement.innerHTML = '';
     const today = new Date();
@@ -361,7 +361,7 @@ function renderFeeStatus(fees, ulElement) {
     `;
 }
 
-// 🛑 NEW FUNCTION: Handles the student's break request 🛑
+// 🛑 STUDENT FUNCTION: Handles the student's break request 🛑
 window.requestBreak = async function (studentId) {
     if (!confirm("Are you sure you want to send a break request? The admin will review this.")) {
         return;
@@ -474,7 +474,11 @@ function renderStudentSelector(students) {
 window.loadMonthlyFees = async function () {
     const studentId = document.getElementById('studentSelector').value;
     const ulElement = document.getElementById('monthlyFees');
+    const commButton = document.getElementById('draftCommButton'); // New element to contain the button
+    
+    // Clear list and button
     ulElement.innerHTML = '';
+    commButton.innerHTML = ''; 
 
     if (!studentId) return;
 
@@ -487,12 +491,12 @@ window.loadMonthlyFees = async function () {
     });
 }
 
-// 🛑 ADMIN FUNCTION (FIXED: Removed Draft Comm. & Applied Green/Orange Colors) 🛑
+// 🛑 ADMIN FUNCTION (CONFIRMED: Logic limits months to current month, Green/Orange buttons applied) 🛑
 function renderAdminFeeManagement(studentId, fees, studentData) {
     const ulElement = document.getElementById('monthlyFees');
     ulElement.innerHTML = '';
     const today = new Date();
-    const currentMonthIndex = today.getMonth();
+    const currentMonthIndex = today.getMonth(); // This ensures we stop at the current month
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     for (let i = 0; i <= currentMonthIndex; i++) {
@@ -500,6 +504,7 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
         const monthKey = monthName.toLowerCase();
         const feeData = fees[monthKey];
         const li = document.createElement('li');
+        // Apply styling for better alignment
         li.classList.add('fee-item', 'flex', 'justify-between', 'items-center', 'p-2', 'border-b');
 
         let status = 'unpaid';
@@ -536,13 +541,6 @@ function renderAdminFeeManagement(studentId, fees, studentData) {
                     `<button class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded text-sm" onclick="markBreak('${studentId}', '${monthKey}', '${monthName}', '${status}')">
                         ${isBreak ? 'Unmark Break' : 'Mark Break'}
                     </button>` 
-                    : ''
-                }
-                
-                ${status !== 'paid' ? 
-                    // Moved 'Draft Comm' to a separate section in the admin panel if needed, but removed from monthly list
-                    // If you still need a communication button, consider placing it near the student selector.
-                    '' 
                     : ''
                 }
             </div>

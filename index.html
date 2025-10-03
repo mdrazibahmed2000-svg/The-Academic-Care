@@ -3,77 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Academic Care - Fee Management</title>
-    
+    <title>Academic Care Fee Management</title>
+    <!-- Load custom stylesheet -->
     <link rel="stylesheet" href="style.css">
     
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.14.0/firebase-database.js"></script>
+    <!-- CRITICAL: FIREBASE SDK LINKS -->
+    <!-- These MUST be loaded before script.js -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
 
-    <div id="login-page" class="page">
-        <h2>Login / Student ID</h2>
-        <form id="loginForm">
-            <input type="text" id="studentId" placeholder="Enter Student ID or 'admin'" required>
-            <button type="button" onclick="login()">Login</button>
-        </form>
-        <p class="error" id="loginError"></p>
-        <button onclick="showRegister()">New Student? Register Here</button>
-    </div>
+    <div class="page">
+        <!-- Login / Registration Page -->
+        <div id="login-page">
+            <h2>Login / Student ID</h2>
+            <input type="text" id="studentId" placeholder="Enter Student ID or 'admin'">
+            <button onclick="login()">Login</button>
+            <p id="loginError" class="error"></p>
+            <button onclick="showRegister()">New Student? Register Here</button>
+        </div>
 
-    <div id="register-page" class="page hidden">
-        <h2>Student Registration</h2>
-        <form id="registerForm">
-            <input type="text" id="regName" placeholder="Student Name" required>
-            <input type="text" id="regClass" placeholder="Class (e.g., 7)" required>
-            <input type="number" id="regRoll" placeholder="Roll No" required>
-            <input type="text" id="regGuardian" placeholder="Guardian Contact No" required>
-            <button type="button" onclick="registerStudent()">Register</button>
-        </form>
-        <button onclick="showLogin()">Back to Login</button>
-    </div>
+        <!-- Registration Page (Hidden by default) -->
+        <div id="register-page" class="hidden">
+            <h2>New Student Registration</h2>
+            <form id="registerForm">
+                <input type="text" id="regName" placeholder="Student Name" required>
+                <input type="number" id="regClass" placeholder="Class (e.g., 7)" required>
+                <input type="number" id="regRoll" placeholder="Roll (e.g., 1)" required>
+                <input type="text" id="regGuardian" placeholder="Guardian Phone Number" required>
+                <button type="button" onclick="registerStudent()">Register</button>
+                <button type="button" onclick="showLogin()">Back to Login</button>
+            </form>
+        </div>
 
-    <div id="admin-panel" class="page hidden">
-        <h2>Admin Dashboard</h2>
-        
-        <h3>Manage Student Fees</h3>
-        <select id="selectStudentFees" onchange="loadStudentFees(this.value)">
-            </select>
-        <ul id="monthlyFees">
-            </ul>
-        
-        <hr>
-
-        <h3>Pending Approvals</h3>
-        <ul id="pendingStudents"></ul>
-
-        <button onclick="logout()">Logout Admin</button>
-    </div>
-
-    <div id="dashboard" class="page hidden">
-        
-        <div id="studentName">
+        <!-- Student Dashboard (Hidden by default) -->
+        <div id="dashboard" class="hidden">
+            <!-- Student Header (Populated by JS) -->
+            <div id="studentName">
+                <h2>The Academic Care</h2>
+                <p>Academic Year: 2025</p>
+            </div>
+            
+            <!-- My Profile Section -->
+            <h3 id="profileHeader" class="collapsible-header profile-header" onclick="toggleSection('profileContent')">
+                My Profile ⬇️
+            </h3>
+            <div id="profileContent" class="collapsible-content hidden">
+                <!-- Profile details populated by JS -->
             </div>
 
-        <h3 id="profileHeader" onclick="toggleSection('profileContent')" class="collapsible-header profile-header">
-            My Profile ⬇️
-        </h3>
-
-        <div id="profileContent" class="collapsible-content hidden">
+            <!-- Tuition Fee Status Section -->
+            <h3 id="feesHeader" class="collapsible-header fees-header" onclick="toggleSection('feesContent')">
+                Tuition Fee Status ⬇️
+            </h3>
+            <div id="feesContent" class="collapsible-content hidden">
+                <!-- Fee list populated by JS -->
+            </div>
+            
+            <button onclick="logout()">Logout</button>
+        </div>
+        
+        <!-- Admin Panel (Hidden by default) -->
+        <div id="admin-panel" class="hidden">
+            <h2>Admin Panel</h2>
+            <h3 class="collapsible-header" onclick="toggleSection('pendingStudentsContent')">
+                Pending Registrations ⬇️
+            </h3>
+            <div id="pendingStudentsContent" class="collapsible-content">
+                <ul id="pendingStudents">
+                    <!-- List of pending students populated by JS -->
+                    <li>Loading...</li>
+                </ul>
             </div>
 
-        <h3 id="feesHeader" onclick="toggleSection('feesContent')" class="collapsible-header fees-header">
-            Tuition Fee Status ⬇️
-        </h3>
-
-        <div id="feesContent" class="collapsible-content hidden">
+            <h3 class="collapsible-header" onclick="toggleSection('manageFeesContent')">
+                Manage Monthly Fees ⬇️
+            </h3>
+            <div id="manageFeesContent" class="collapsible-content">
+                <select id="selectStudentFees" onchange="loadStudentFees(this.value)">
+                    <option value="">Select Student</option>
+                </select>
+                <div id="monthlyFees">
+                    <!-- Monthly fee management populated by JS -->
+                </div>
             </div>
-
-        <button onclick="logout()">Logout</button>
+            
+            <button onclick="logout()">Logout</button>
+        </div>
     </div>
 
+    <!-- Load the main application script -->
     <script src="script.js"></script>
 </body>
 </html>

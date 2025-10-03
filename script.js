@@ -1,4 +1,4 @@
-// --- COMPLETE, FINAL, AND CORRECTED script.js ---
+// --- COMPLETE, FINAL, AND CORRECTED script.js (Assumes HTML is fixed) ---
 
 // Firebase config (USE YOUR ACTUAL CONFIGURATION!)
 var firebaseConfig = {
@@ -22,7 +22,7 @@ var currentStudent = "";
 function getCurrentDate() {
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
-    const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
     const yyyy = today.getFullYear();
     return dd + '-' + mm + '-' + yyyy;
 }
@@ -41,11 +41,9 @@ function toggleSection(contentId) {
     const header = document.getElementById(contentId.replace('Content', 'Header'));
     
     if (content.classList.contains('hidden')) {
-        // Show content
         content.classList.remove('hidden');
         header.innerHTML = header.innerHTML.replace('⬇️', '⬆️');
     } else {
-        // Hide content
         content.classList.add('hidden');
         header.innerHTML = header.innerHTML.replace('⬆️', '⬇️');
     }
@@ -105,10 +103,17 @@ function registerStudent() {
 
 // SECURE LOGIN FUNCTION
 function login() {
+    // This is the function attached to the button's onclick attribute.
     var id = document.getElementById("studentId").value.trim();
     clearLoginError();
+    
+    // Check if input is empty
+    if (!id) {
+        document.getElementById("loginError").innerText = "❌ Please enter a Student ID or 'admin'";
+        return;
+    }
 
-    // 1. ADMIN FLOW CHECK (Uses Firebase Auth for email/password)
+    // 1. ADMIN FLOW CHECK
     if (id === "admin" || id.includes('@')) {
         var email = id.includes('@') ? id : prompt("Enter admin email:");
         var password = prompt("Enter admin password:");
@@ -132,7 +137,7 @@ function login() {
         return; 
     }
 
-    // 2. STUDENT FLOW (Uses Realtime Database for ID and status check)
+    // 2. STUDENT FLOW
     database.ref('students/' + id).once('value').then(function(snapshot) {
         if (snapshot.exists()) {
             var student = snapshot.val();
@@ -146,20 +151,29 @@ function login() {
             document.getElementById("login-page").classList.add("hidden");
             document.getElementById("dashboard").classList.remove("hidden");
             
-            // Re-initialize collapsible state to hidden on new login
-            document.getElementById("profileContent").classList.add("hidden");
-            document.getElementById("feesContent").classList.add("hidden");
-            document.getElementById("profileHeader").innerHTML = "My Profile ⬇️";
-            document.getElementById("feesHeader").innerHTML = "Tuition Fee Status ⬇️";
+            // Reset collapsible state on successful login
+            const profileContent = document.getElementById("profileContent");
+            const feesContent = document.getElementById("feesContent");
+            const profileHeader = document.getElementById("profileHeader");
+            const feesHeader = document.getElementById("feesHeader");
+
+            if (profileContent) { profileContent.classList.add("hidden"); }
+            if (feesContent) { feesContent.classList.add("hidden"); }
+            if (profileHeader) { profileHeader.innerHTML = profileHeader.innerHTML.replace('⬆️', '⬇️'); }
+            if (feesHeader) { feesHeader.innerHTML = feesHeader.innerHTML.replace('⬆️', '⬇️'); }
 
             loadStudentDashboard(id); 
         } else {
             document.getElementById("loginError").innerText = "❌ Invalid ID!";
         }
+    }).catch(error => {
+        // Catch network or Firebase permission errors
+        console.error("Database Login Error:", error);
+        document.getElementById("loginError").innerText = "❌ Network or Database Error. Check Console.";
     });
 }
 
-// --- ADMIN FUNCTIONS ---
+// --- ADMIN FUNCTIONS (Included for completeness) ---
 
 function loadAdminPanel() {
     if (!auth.currentUser) return logout();
@@ -240,7 +254,7 @@ function markMonthBreak(studentId, month) {
     });
 }
 
-// Admin Fee Management Display
+
 function loadStudentFees(studentId) {
     if (!auth.currentUser) return;
     if (!studentId) {
@@ -291,7 +305,6 @@ function loadStudentFees(studentId) {
     });
 }
 
-
 // --- STUDENT DASHBOARD FUNCTIONS ---
 
 function loadStudentDashboard(studentId) {
@@ -308,47 +321,53 @@ function loadStudentDashboard(studentId) {
 
         var student = snapshot.val();
 
-        // 1. SCHOOL NAME AND ACADEMIC YEAR
-        var headerHTML = '<h2>The Academic Care</h2>';
-        headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
-        document.getElementById("studentName").innerHTML = headerHTML;
-        
-        
-        // 2. MY PROFILE CONTENT
-        var profileContentHTML = '';
-        profileContentHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
-        profileContentHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
-        profileContentHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
-        profileContentHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
-
-        document.getElementById("profileContent").innerHTML = profileContentHTML;
-
-
-        // 3. TUITION FEE STATUS CONTENT
-        var feesContentHTML = '<ul>';
-        var fees = student.fees || {}; 
-        
-        for (let i = 0; i <= currentMonthIndex; i++) {
-            var month = chronologicalMonths[i];
-            
-            if (fees.hasOwnProperty(month)) {
-                
-                let status = fees[month];
-                let dateDisplay = '';
-                
-                if (typeof status === 'object' && status !== null && status.status) {
-                    dateDisplay = ` (Paid on: ${status.date})`;
-                    status = status.status; 
-                }
-
-                var statusClass = getStatusClass(status); 
-                
-                feesContentHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + dateDisplay + '</span></li>';
-            }
+        // 1. SCHOOL NAME AND ACADEMIC YEAR (Goes to studentName div)
+        const studentNameElement = document.getElementById("studentName");
+        if (studentNameElement) {
+            var headerHTML = '<h2>The Academic Care</h2>';
+            headerHTML += '<p><strong>Academic Year:</strong> 2025</p>';
+            studentNameElement.innerHTML = headerHTML;
         }
         
-        feesContentHTML += '</ul>';
-        
-        document.getElementById("feesContent").innerHTML = feesContentHTML;
+        // 2. MY PROFILE CONTENT (Goes to profileContent div)
+        const profileContentElement = document.getElementById("profileContent");
+        if (profileContentElement) {
+            var profileContentHTML = '';
+            profileContentHTML += '<p><strong>Student Name:</strong> ' + student.name + '</p>';
+            profileContentHTML += '<p><strong>Class:</strong> ' + student.class + '</p>';
+            profileContentHTML += '<p><strong>Roll:</strong> ' + student.roll + '</p>';
+            profileContentHTML += '<p><strong>Guardian No:</strong> ' + student.guardian + '</p>';
+            profileContentElement.innerHTML = profileContentHTML;
+        }
+
+        // 3. TUITION FEE STATUS CONTENT (Goes to feesContent div)
+        const feesContentElement = document.getElementById("feesContent");
+        if (feesContentElement) {
+            var feesContentHTML = '<ul>';
+            var fees = student.fees || {}; 
+            
+            for (let i = 0; i <= currentMonthIndex; i++) {
+                var month = chronologicalMonths[i];
+                
+                if (fees.hasOwnProperty(month)) {
+                    
+                    let status = fees[month];
+                    let dateDisplay = '';
+                    
+                    if (typeof status === 'object' && status !== null && status.status) {
+                        dateDisplay = ` (Paid on: ${status.date})`;
+                        status = status.status; 
+                    }
+
+                    var statusClass = getStatusClass(status); 
+                    
+                    feesContentHTML += '<li>' + month + ': <span class="' + statusClass + '">' + status + dateDisplay + '</span></li>';
+                }
+            }
+            
+            feesContentHTML += '</ul>';
+            
+            feesContentElement.innerHTML = feesContentHTML;
+        }
     });
 }

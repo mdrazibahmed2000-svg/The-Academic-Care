@@ -3,83 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Fee Management</title>
+    <title>The Academic Care</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <div class="container">
-        <h1 id="welcomeHeader">Student Fee Management</h1>
+<!-- Login Page -->
+<div class="container" id="loginContainer">
+    <h2>The Academic Care</h2>
+    <input type="text" id="userID" placeholder="Enter Student ID or type 'admin'">
+    <div id="adminLoginFields" class="hidden">
+        <input type="email" id="adminEmail" placeholder="Admin Email">
+        <input type="password" id="adminPassword" placeholder="Password">
+    </div>
+    <button id="loginBtn">Log In</button>
+    <button id="applyBtn">Apply for Registration</button>
+    <div id="message"></div>
+</div>
 
-        <div id="login-page" class="page active">
-            <h2>Login</h2>
-            <input type="text" id="studentId" placeholder="Enter Student ID or type 'admin'">
-            
-            <div id="adminFields" class="hidden">
-                <input type="email" id="adminEmail" placeholder="Admin Email">
-                <input type="password" id="adminPassword" placeholder="Admin Password">
-            </div>
-            
-            <button class="bg-indigo-500 hover:bg-indigo-600" onclick="login()">Login</button>
-            <p id="loginError" style="color:red; text-align:center;"></p>
-            
-            <p style="text-align:center;margin-top:10px;">
-                New student? <a href="#" onclick="showRegister()">Register here</a>
-            </p>
-        </div>
+<!-- Registration Page -->
+<div id="registrationContainer" class="container hidden">
+    <h2>Apply for Registration</h2>
+    <form id="registrationForm">
+        <input type="text" id="name" placeholder="Student Name" required>
+        <input type="text" id="class" placeholder="Class (e.g., 07)" required>
+        <input type="text" id="roll" placeholder="Roll" required>
+        <input type="text" id="guardian" placeholder="Guardian No." required>
+        <button type="submit">Submit Registration</button>
+    </form>
+    <div id="studentIDDisplay"></div>
+    <button id="backToLogin">Back to Login</button>
+</div>
 
-        <div id="register-page" class="page hidden">
-            <h2>Student Registration</h2>
-            <input type="text" id="regName" placeholder="Full Name">
-            <input type="text" id="regClass" placeholder="Class (e.g., 8, 9, 10)">
-            <input type="text" id="regRoll" placeholder="Roll Number">
-            <input type="text" id="regGuardian" placeholder="Guardian Name">
-            
-            <button class="bg-green-500 hover:bg-green-600" onclick="registerStudent()">Register</button>
-            <button class="bg-gray-500 hover:bg-gray-600" onclick="showLogin()">Back to Login</button>
-        </div>
+<!-- Student Panel -->
+<div id="studentPanel" class="container hidden">
+    <h1>The Academic Care</h1>
+    <p>Academic Year: 2025</p>
+    <button id="profileBtn">My Profile</button>
+    <button id="tuitionBtn">Tuition Fee Status</button>
+    <button id="breakBtn">Request Break</button>
 
-        <div id="dashboard" class="page hidden">
-            <h2 id="studentName">Student Dashboard</h2>
-            <h3>Monthly Fee Status</h3>
-            <div id="studentFees">
-                <p style="text-align: center;">Loading fee data...</p>
-            </div>
-            <button class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
-        </div>
-
-        <div id="admin-panel" class="page hidden">
-            <h2>Admin Dashboard</h2>
-
-            <h3>Pending Students</h3>
-            <ul id="pendingStudents">
-                <li>No pending students.</li>
-            </ul>
-
-            <h3>Approved Students</h3>
-            <ul id="approvedStudents">
-                <li>No approved students.</li>
-            </ul>
-
-            <h3 style="margin-bottom: 15px;">Fee Management</h3>
-            <select id="studentSelector" onchange="loadMonthlyFees()">
-                <option value="">Select Student to Manage Fees</option>
-            </select>
-            
-            <ul id="monthlyFees" style="margin-top: 15px;">
-                <li>Select a student to view monthly fees.</li>
-            </ul>
-            
-            <button class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
-        </div>
-
+    <div id="profile" class="hidden">
+        <h3>My Profile</h3>
+        <p id="profileInfo"></p>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+    <div id="tuition" class="hidden">
+        <h3>Tuition Fee Status</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tuitionTable"></tbody>
+        </table>
+    </div>
 
-    <script src="app.js"></script>
-    
+    <div id="break" class="hidden">
+        <h3>Request Break</h3>
+        <label for="breakMonths">Number of months:</label>
+        <input type="number" id="breakMonths" min="1" max="12">
+        <button id="requestBreakBtn">Request</button>
+        <p id="breakMessage"></p>
+    </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="container hidden">
+    <h1>Admin Panel</h1>
+    <h3>Pending Students</h3>
+    <ul id="pendingStudents"></ul>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>

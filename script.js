@@ -1,15 +1,15 @@
 // ====================================================================
-// 1. FIREBASE INITIALIZATION AND IMPORTS
+// 1. FIREBASE INITIALIZATION AND IMPORTS (MODULAR SDK)
 // ====================================================================
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, get, ServerValue } from "firebase/database";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
-// Your web app's Firebase configuration (using your confirmed data)
+// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
-    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", // Confirmed URL
+    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "the-academic-care",
     storageBucket: "the-academic-care.firebasestorage.app",
     messagingSenderId: "728354914429",
@@ -22,20 +22,24 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
-// Global view elements
+
+// Global references for view management
 const registrationView = document.getElementById('registrationView');
 const loginView = document.getElementById('loginView');
 const registerResultMessage = document.getElementById('registerResultMessage');
 
 
 // ====================================================================
-// 2. VIEW SWITCHING LOGIC (For Single-Page App behavior)
+// 2. VIEW SWITCHING LOGIC (Single-Page App behavior)
 // ====================================================================
+
 function showView(viewElement) {
+    // Hide all main containers and result messages
     if (registrationView) registrationView.classList.add('hidden');
     if (loginView) loginView.classList.add('hidden');
     if (registerResultMessage) registerResultMessage.classList.add('hidden');
     
+    // Show the requested view
     if (viewElement) viewElement.classList.remove('hidden');
 }
 
@@ -44,26 +48,21 @@ function setupViewSwitching() {
     const showLoginLink = document.getElementById('showLogin');
     const goToLoginAfterReg = document.getElementById('goToLoginAfterReg');
 
-    if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showView(registrationView);
-        });
-    }
+    if (showRegisterLink) showRegisterLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showView(registrationView);
+    });
 
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            showView(loginView);
-        });
-    }
+    if (showLoginLink) showLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showView(loginView);
+    });
     
-    if (goToLoginAfterReg) {
-        goToLoginAfterReg.addEventListener('click', (e) => {
-            e.preventDefault();
-            showView(loginView);
-        });
-    }
+    // Link from the registration success message
+    if (goToLoginAfterReg) goToLoginAfterReg.addEventListener('click', (e) => {
+        e.preventDefault();
+        showView(loginView);
+    });
 
     // Default: Start on the registration view
     showView(registrationView); 
@@ -71,8 +70,9 @@ function setupViewSwitching() {
 
 
 // ====================================================================
-// 3. REGISTRATION LOGIC
+// 3. REGISTRATION HANDLER
 // ====================================================================
+
 function handleRegistration() {
     const form = document.getElementById('registrationForm');
     if (!form) return; 
@@ -92,7 +92,6 @@ function handleRegistration() {
         const password = document.getElementById('password').value;
         const studentClass = document.getElementById('class').value;
         const roll = document.getElementById('roll').value;
-        const guardianNo = document.getElementById('guardianNo').value;
         
         // Generate Unique Student ID (S+YYYY+CC+RR)
         const academicYear = new Date().getFullYear();
@@ -101,7 +100,7 @@ function handleRegistration() {
         const studentID = `S${academicYear}${formattedClass}${formattedRoll}`;
 
         try {
-            // 1. Create User in Firebase Authentication
+            // 1. Create User in Firebase Authentication (handles sign up)
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const userUID = userCredential.user.uid;
 
@@ -111,22 +110,20 @@ function handleRegistration() {
                 name: name,
                 class: studentClass,
                 roll: formattedRoll,
-                guardianNo: guardianNo,
+                guardianNo: document.getElementById('guardianNo').value,
                 email: email,
                 uid: userUID,
                 status: 'Pending', 
                 registeredAt: ServerValue.TIMESTAMP 
             };
             
-            const registrationRef = ref(database, 'registrations/' + studentID);
-            await set(registrationRef, registrationData);
+            await set(ref(database, 'registrations/' + studentID), registrationData);
 
             // 3. Display Success Message
             document.getElementById('studentID').innerHTML = `Your **Student ID** is: <strong>${studentID}</strong>`;
             
             form.classList.add('hidden');
             registerResultMessage.classList.remove('hidden');
-            alert("Registration successful! Your account is created, and your application is pending approval.");
 
         } catch (error) {
             console.error("Registration failed:", error);
@@ -143,9 +140,11 @@ function handleRegistration() {
     });
 }
 
+
 // ====================================================================
-// 4. LOGIN & STATUS CHECK LOGIC
+// 4. LOGIN & STATUS CHECK HANDLER
 // ====================================================================
+
 function handleLogin() {
     const loginForm = document.getElementById('loginForm');
     const statusArea = document.getElementById('statusArea');
@@ -154,6 +153,7 @@ function handleLogin() {
 
     if (!loginForm) return; 
 
+    // Handle Login Submission
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
@@ -164,7 +164,6 @@ function handleLogin() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // onAuthStateChanged will handle the UI update
         } catch (error) {
             alert(`Login Failed: ${error.message}`);
         } finally {
@@ -173,29 +172,27 @@ function handleLogin() {
         }
     });
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("Logout error:", error);
-            }
-        });
-    }
+    // Handle Logout
+    if (logoutBtn) logoutBtn.addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+    });
 
+    // Handle Auth State Change (User logs in/out)
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // User is signed in: Show Status
+            // User signed in: show status view
             loginForm.classList.add('hidden');
             if (statusArea) statusArea.classList.remove('hidden');
-            showView(loginView); // Ensure the login view (which contains status) is visible
+            showView(loginView); 
             await displayStatus(user.uid);
         } else {
-            // User is signed out: Show Login Form
+            // User signed out: show login form
             if (loginForm) loginForm.classList.remove('hidden');
             if (statusArea) statusArea.classList.add('hidden');
-            // If we are currently on the registration page, don't force a switch
-            // If we are on the login page, the login form should be visible
         }
     });
 }
@@ -217,6 +214,7 @@ async function displayStatus(uid) {
         if (snapshot.exists()) {
             let registrationFound = false;
             
+            // Find the specific registration record linked to this UID
             snapshot.forEach((childSnapshot) => {
                 const regData = childSnapshot.val();
                 if (regData.uid === uid) {
@@ -228,6 +226,7 @@ async function displayStatus(uid) {
                     studentIDDisplay.textContent = regData.id;
                     statusElement.textContent = status.toUpperCase();
                     
+                    // Update styling and messages based on status
                     statusElement.classList.remove('pending', 'approved');
                     if (status.toLowerCase() === 'pending') {
                         statusElement.classList.add('pending');
@@ -236,7 +235,7 @@ async function displayStatus(uid) {
                         statusElement.classList.add('approved');
                         adminMessage.textContent = "Congratulations! Your registration has been approved. You can now access all coaching resources.";
                     } else {
-                        statusElement.classList.add('pending'); 
+                        statusElement.classList.add('pending'); // Default for 'Rejected', 'On Hold', etc.
                         adminMessage.textContent = regData.adminNote || "Your registration status is not standard. Please contact 'The Academic Care' directly.";
                     }
                 }
@@ -244,12 +243,12 @@ async function displayStatus(uid) {
 
             if (!registrationFound) {
                 statusElement.textContent = "No Registration Found";
-                adminMessage.textContent = "Please complete the registration form.";
+                adminMessage.textContent = "Please ensure you have completed the registration form.";
                 studentIDDisplay.textContent = "N/A";
             }
 
         } else {
-            statusElement.textContent = "Error: No registrations found in the database.";
+            statusElement.textContent = "Error: Database is empty.";
         }
     } catch (error) {
         console.error("Error fetching status:", error);
@@ -261,11 +260,12 @@ async function displayStatus(uid) {
 // ====================================================================
 // 5. INITIALIZATION
 // ====================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Set up the single-page application navigation
+    // 1. Set up the single-page application navigation
     setupViewSwitching();
     
-    // Initialize the main Firebase handlers
+    // 2. Initialize the main Firebase handlers
     handleRegistration();
     handleLogin();
 });

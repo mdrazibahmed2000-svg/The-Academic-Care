@@ -1,264 +1,177 @@
-// ===================== FIREBASE CONFIGURATION ===================== //
-var firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // <-- REPLACE WITH YOUR API KEY
-  authDomain: "the-academic-care.firebaseapp.com",
-  databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "the-academic-care",
-  storageBucket: "the-academic-care.appspot.com",
-  messagingSenderId: "728354914429",
-  appId: "1:728354914429:web:9fe92ca6476baf6af2f114",
+// Firebase modular SDK
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
+  authDomain: "the-academic-care.firebaseapp.com",
+  databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "the-academic-care",
+  storageBucket: "the-academic-care.firebasestorage.app",
+  messagingSenderId: "728354914429",
+  appId: "1:728354914429:web:9fe92ca6476baf6af2f114",
+  measurementId: "G-37MDWVYWFJ"
 };
 
-firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
-var auth = firebase.auth(); 
-var currentStudent = "";
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
-const ADMIN_EMAIL = 'your-admin-email@example.com'; // <-- REPLACE THIS
+// DOM Elements
+const userID = document.getElementById("userID");
+const adminLoginFields = document.getElementById("adminLoginFields");
+const loginBtn = document.getElementById("loginBtn");
+const applyBtn = document.getElementById("applyBtn");
+const messageDiv = document.getElementById("message");
 
-// ===================== DOM Elements and Navigation ===================== //
-const loginPage = document.getElementById("login-page");
-const registerPage = document.getElementById("register-page");
-const studentDashboard = document.getElementById("dashboard");
-const adminPanel = document.getElementById("admin-panel");
-const idOrRoleInput = document.getElementById("studentId");
-const adminAuthFields = document.getElementById("adminFields");
-const authError = document.getElementById("loginError");
+const registrationContainer = document.getElementById("registrationContainer");
+const loginContainer = document.getElementById("loginContainer");
+const backToLogin = document.getElementById("backToLogin");
+const registrationForm = document.getElementById("registrationForm");
+const studentIDDisplay = document.getElementById("studentIDDisplay");
 
-// Utility function for clean page switching
-function showPage(pageElement) {
-  [loginPage, registerPage, studentDashboard, adminPanel].forEach(p => {
-    if (p) {
-      p.classList.remove("active");
-      p.classList.add("hidden");
-    }
-  });
-  if (pageElement) {
-    pageElement.classList.remove("hidden");
-    pageElement.classList.add("active");
-  }
-}
+const studentPanel = document.getElementById("studentPanel");
+const profileBtn = document.getElementById("profileBtn");
+const tuitionBtn = document.getElementById("tuitionBtn");
+const breakBtn = document.getElementById("breakBtn");
 
-function showRegister() {
-  showPage(registerPage);
-}
+const profileSection = document.getElementById("profile");
+const profileInfo = document.getElementById("profileInfo");
+const tuitionSection = document.getElementById("tuition");
+const tuitionTable = document.getElementById("tuitionTable");
+const breakSection = document.getElementById("break");
+const breakMonthsInput = document.getElementById("breakMonths");
+const requestBreakBtn = document.getElementById("requestBreakBtn");
+const breakMessage = document.getElementById("breakMessage");
 
-function showLogin() {
-  showPage(loginPage);
-  // Important: Hide admin fields when returning to login
-  adminAuthFields.classList.add('hidden'); 
-  idOrRoleInput.value = "";
-  authError.textContent = "";
-}
+const adminPanel = document.getElementById("adminPanel");
+const pendingStudentsList = document.getElementById("pendingStudents");
+const tuitionStudentID = document.getElementById("tuitionStudentID");
+const tuitionMonth = document.getElementById("tuitionMonth");
+const markPaidBtn = document.getElementById("markPaidBtn");
 
-function logout() {
-  auth.signOut().then(() => {
-    currentStudent = "";
-    showLogin();
-    db.ref("students").off();
-  }).catch((error) => {
-    console.error("Logout Error:", error);
-  });
-}
-
-// ✅ FIX: Listener to show/hide admin fields based on input
-document.addEventListener('DOMContentLoaded', () => {
-  // Check if the elements exist before attaching the listener
-  if (idOrRoleInput && adminAuthFields) {
-    idOrRoleInput.addEventListener('input', function() {
-      const val = this.value.trim().toLowerCase();
-      // Toggles the 'hidden' class: hides if value is NOT 'admin', shows if it IS 'admin'
-      adminAuthFields.classList.toggle('hidden', val !== 'admin');
-    });
-  }
+// Show admin fields
+userID.addEventListener("input", () => {
+    if(userID.value.trim().toLowerCase() === "admin") adminLoginFields.classList.remove("hidden");
+    else adminLoginFields.classList.add("hidden");
 });
 
-// ===================== REGISTER ===================== //
-function registerStudent() {
-  const name = document.getElementById("regName").value.trim();
-  const cls = document.getElementById("regClass").value.trim();
-  const roll = document.getElementById("regRoll").value.trim();
-  const guardian = document.getElementById("regGuardian").value.trim();
+// Login
+loginBtn.addEventListener("click", async () => {
+    const id = userID.value.trim();
+    if(id.toLowerCase() === "admin") {
+        const email = document.getElementById("adminEmail").value.trim();
+        const password = document.getElementById("adminPassword").value;
+        if(!email || !password) { messageDiv.textContent = "Enter email/password"; return; }
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            loginContainer.classList.add("hidden");
+            adminPanel.classList.remove("hidden");
+            loadPendingStudents();
+        } catch (e) { messageDiv.textContent = e.message; }
+    } else {
+        try {
+            const snapshot = await get(child(ref(db), `students/${id}`));
+            if(snapshot.exists() && snapshot.val().approved) {
+                loginContainer.classList.add("hidden");
+                loadStudentPanel(snapshot.val());
+            } else messageDiv.textContent = "Student not found or not approved";
+        } catch(e){ messageDiv.textContent = e.message; }
+    }
+});
 
-  if (!name || !cls || !roll || !guardian) return alert("Please fill all fields for registration.");
+// Apply button
+applyBtn.addEventListener("click", () => {
+    loginContainer.classList.add("hidden");
+    registrationContainer.classList.remove("hidden");
+});
 
-  const year = new Date().getFullYear().toString().substring(2); 
-  const id = "S" + year + cls.padStart(2, '0') + roll.padStart(2, '0');
+// Back to login
+backToLogin.addEventListener("click", () => {
+    registrationContainer.classList.add("hidden");
+    loginContainer.classList.remove("hidden");
+});
 
-  db.ref("students/" + id).set({
-    name, class: cls, roll, guardian, status: "pending"
-  }, err => {
-    if (err) alert("Error during registration: " + err);
-    else {
-      alert("✅ Registration successful! Your ID is: " + id + ". Please wait for admin approval to log in.");
-      showLogin();
-    }
-  });
+// Registration
+registrationForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const studentClass = document.getElementById("class").value.trim();
+    const roll = document.getElementById("roll").value.trim();
+    const guardian = document.getElementById("guardian").value.trim();
+    const studentID = `S2025${studentClass}${roll}`;
+
+    const studentData = {
+        id: studentID,
+        name, class: studentClass, roll, guardian,
+        approved: false,
+        tuitionStatus: {
+            January:{paid:false,date:null}, February:{paid:false,date:null},
+            March:{paid:false,date:null}, April:{paid:false,date:null},
+            May:{paid:false,date:null}, June:{paid:false,date:null},
+            July:{paid:false,date:null}, August:{paid:false,date:null},
+            September:{paid:false,date:null}, October:{paid:false,date:null},
+            November:{paid:false,date:null}, December:{paid:false,date:null}
+        },
+        breakRequested:0
+    };
+    await set(ref(db, `students/${studentID}`), studentData);
+    studentIDDisplay.innerHTML = `Registration submitted! Your Student ID: <strong>${studentID}</strong>`;
+    registrationForm.reset();
+});
+
+// Student panel
+function loadStudentPanel(student){
+    studentPanel.classList.remove("hidden");
+    profileBtn.addEventListener("click",()=>{
+        hideAllSections(); profileSection.classList.remove("hidden");
+        profileInfo.innerHTML=`<strong>Name:</strong> ${student.name}<br><strong>Class:</strong> ${student.class}<br><strong>Roll:</strong> ${student.roll}<br><strong>Guardian:</strong> ${student.guardian}<br><strong>ID:</strong> ${student.id}`;
+    });
+    tuitionBtn.addEventListener("click",()=>{
+        hideAllSections(); tuitionSection.classList.remove("hidden");
+        tuitionTable.innerHTML="";
+        Object.entries(student.tuitionStatus).forEach(([month,data])=>{
+            const tr=document.createElement("tr");
+            const statusClass=data.paid?"paid":"unpaid";
+            const statusText=data.paid?`Paid (${data.date})`:"Unpaid";
+            tr.innerHTML=`<td>${month}</td><td class="${statusClass}">${statusText}</td>`;
+            tuitionTable.appendChild(tr);
+        });
+    });
+    breakBtn.addEventListener("click",()=>{ hideAllSections(); breakSection.classList.remove("hidden"); });
+    requestBreakBtn.addEventListener("click", async ()=>{
+        const months=parseInt(breakMonthsInput.value);
+        if(months>0){ await update(ref(db, `students/${student.id}`), {breakRequested:months}); breakMessage.textContent=`Break requested for ${months} month(s)`;}
+    });
+}
+function hideAllSections(){ profileSection.classList.add("hidden"); tuitionSection.classList.add("hidden"); breakSection.classList.add("hidden"); }
+
+// Admin: pending students
+async function loadPendingStudents(){
+    pendingStudentsList.innerHTML="";
+    const snapshot=await get(ref(db,"students"));
+    snapshot.forEach(doc=>{
+        const student=doc.val();
+        if(!student.approved){
+            const li=document.createElement("li");
+            li.textContent=`${student.name} (${student.id})`;
+            const approveBtn=document.createElement("button"); approveBtn.textContent="Approve";
+            approveBtn.addEventListener("click",async()=>{ await update(ref(db, `students/${student.id}`),{approved:true}); li.remove(); });
+            li.appendChild(approveBtn);
+            pendingStudentsList.appendChild(li);
+        }
+    });
 }
 
-// ===================== LOGIN ===================== //
-function login() {
-  const id = document.getElementById("studentId").value.trim();
-  const email = document.getElementById("adminEmail").value.trim();
-  const password = document.getElementById("adminPassword").value.trim();
-  const err = document.getElementById("loginError");
-  err.textContent = "";
-
-  // ---------- ADMIN LOGIN ----------
-  if (id.toLowerCase() === "admin") {
-    if (!email || !password) {
-      err.textContent = "Please enter admin email and password.";
-      return;
-    }
-
-    auth.signInWithEmailAndPassword(email, password)
-      .then((userCredential) => {
-        if (userCredential.user.email === ADMIN_EMAIL) {
-          showPage(adminPanel);
-          loadAdminPanel();
-        } else {
-          auth.signOut();
-          err.textContent = "❌ Not authorized as admin.";
-        }
-      })
-      .catch(e => err.textContent = `❌ Admin Login Failed: ${e.message}`);
-    return;
-  }
-
-  // ---------- STUDENT LOGIN ----------
-  db.ref("students/" + id).once("value").then(s => {
-    if (!s.exists()) return err.textContent = "❌ Invalid ID!";
-    const data = s.val();
-    if (data.status !== "approved") return err.textContent = "⏳ Awaiting approval.";
-
-    currentStudent = id;
-    showPage(studentDashboard);
-    document.getElementById("studentName").textContent =
-      `${data.name} (ID: ${currentStudent}, Class ${data.class}, Roll ${data.roll})`;
-
-    loadStudentDashboard(id);
-  })
-  .catch(error => {
-    console.error("Student Login Error:", error);
-    err.textContent = "❌ Login failed. Check Student ID or contact admin.";
-  });
-}
-
-// ===================== ADMIN PANEL FUNCTIONS ===================== //
-function loadAdminPanel() {
-  db.ref("students").on("value", s => { 
-    const data = s.val() || {};
-    let pending = "", approved = "";
-    const studentSelector = document.getElementById("studentSelector");
-    let selectorOptions = '<option value="">Select Student</option>';
-
-    for (let id in data) {
-      const st = data[id];
-      if (st.status === "pending")
-        pending += `<li>${st.name} (${st.class}-${st.roll}) <button onclick="approveStudent('${id}')" class='bg-green-500 hover:bg-green-600 text-white text-xs'>Approve</button></li>`;
-      else if (st.status === "approved") {
-        approved += `<li>${st.name} (${st.class}-${st.roll}) (${id})</li>`;
-        selectorOptions += `<option value="${id}">${st.name} (${id})</option>`;
-      }
-    }
-    document.getElementById("pendingStudents").innerHTML = pending || "<li>No pending students.</li>";
-    document.getElementById("approvedStudents").innerHTML = approved || "<li>No approved students.</li>";
-    studentSelector.innerHTML = selectorOptions;
-
-    if (studentSelector.value) loadMonthlyFees();
-  });
-}
-
-function approveStudent(id) {
-  db.ref("students/" + id + "/status").set("approved", () => {
-    initializeMonthlyFees(id);
-    alert("Approved! ID: " + id + ". Monthly fees initialized.");
-  });
-}
-
-function initializeMonthlyFees(id) {
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const obj = {};
-  months.forEach(m => obj[m] = { status: "UNPAID" });
-  db.ref("students/" + id + "/fees").set(obj);
-}
-
-function loadMonthlyFees() {
-  const id = document.getElementById("studentSelector").value;
-  const monthlyFeesContainer = document.getElementById("monthlyFees");
-  if (!id) return monthlyFeesContainer.innerHTML = "<li>Select a student</li>";
-  
-  db.ref("students/" + id + "/fees").off();
-  db.ref("students/" + id + "/fees").on("value", s => renderPayments(id, s.val() || {}));
-}
-
-function renderPayments(id, data) {
-  const container = document.getElementById("monthlyFees");
-  container.innerHTML = "";
-  for (let month in data) {
-    const info = data[month];
-    const status = info.status || "UNPAID";
-    const color = status === "PAID" ? "#10b981" : status === "BREAK" ? "#f97316" : "#ef4444";
-
-    container.innerHTML += `
-      <li class="fee-item" style="border-left: 4px solid ${color};">
-        <span><b>${month}</b> — <span style="color:${color};font-weight:bold;">${status}</span></span>
-        <div class="space-x-1">
-          <button class="bg-blue-500 hover:bg-blue-600 text-white text-xs" onclick="markPaid('${id}','${month}')">Paid</button>
-          <button class="bg-orange-500 hover:bg-orange-600 text-white text-xs" onclick="markBreak('${id}','${month}')">Break</button>
-          <button class="bg-gray-500 hover:bg-gray-600 text-white text-xs" onclick="undoPayment('${id}','${month}')">Undo</button>
-        </div>
-      </li>`;
-  }
-}
-
-function markPaid(id, month) {
-  const method = prompt(`Enter payment method for ${month}:`);
-  if (!method) return;
-  db.ref(`students/${id}/fees/${month}`).set({
-    status: "PAID",
-    method,
-    recordedBy: auth.currentUser ? auth.currentUser.email : "admin",
-    timestamp: new Date().toISOString()
-  });
-}
-
-function markBreak(id, month) {
-  const reason = prompt(`Enter reason for break in ${month}:`);
-  if (!reason) return;
-  db.ref(`students/${id}/fees/${month}`).set({
-    status: "BREAK",
-    reason,
-    recordedBy: auth.currentUser ? auth.currentUser.email : "admin",
-    timestamp: new Date().toISOString()
-  });
-}
-
-function undoPayment(id, month) {
-  if (!confirm(`Are you sure you want to undo the payment/break status for ${month}?`)) return;
-  db.ref(`students/${id}/fees/${month}`).set({ status: "UNPAID" });
-}
-
-// ===================== STUDENT DASHBOARD FUNCTIONS ===================== //
-function loadStudentDashboard(id) {
-  db.ref("students/" + id + "/fees").on("value", s => {
-    const fees = s.val() || {};
-    let html = "<ul>";
-    for (let m in fees) {
-      const statusClass = `status-${(fees[m].status || 'UNPAID').toLowerCase()}`;
-      html += `<li>${m}: <span class="${statusClass}">${fees[m].status || 'UNPAID'}</span></li>`;
-    }
-    html += "</ul>";
-    document.getElementById("studentFees").innerHTML = html;
-  });
-}
-
-// Initial state check
-auth.onAuthStateChanged((user) => {
-  if (user && user.email === ADMIN_EMAIL) {
-    showPage(adminPanel);
-    loadAdminPanel();
-  } else if (loginPage && !loginPage.classList.contains('active')) {
-    showPage(loginPage);
-  }
+// Admin: mark tuition paid
+markPaidBtn.addEventListener("click", async ()=>{
+    const sid=tuitionStudentID.value.trim();
+    const month=tuitionMonth.value;
+    if(sid && month){
+        await update(ref(db, `students/${sid}/tuitionStatus/${month}`), {paid:true, date:new Date().toLocaleDateString()});
+        alert(`Marked ${month} as paid for ${sid}`);
+    }
 });

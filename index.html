@@ -12,6 +12,18 @@
         
         /* Utility class to hide sections */
         .hidden { display: none !important; }
+
+        .nav-links {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .nav-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -58,7 +70,7 @@
             </form>
 
             <div id="registerResultMessage" class="hidden">
-                <h3>Registration Status</h3>
+                <h3>Registration Successful!</h3>
                 <p id="studentID"></p>
                 <p id="statusInfo" class="pending">Status: Pending Admin Approval</p>
                 <p>Proceed to <a href="#" id="goToLoginAfterReg">Login/Status</a> page.</p>

@@ -44,7 +44,7 @@ auth.onAuthStateChanged(user => {
         if (isAdmin) {
             initializeAdminPanel();
         } else {
-            // Student login uses anonymous auth, so we rely on localStorage for the ID
+            // Student login relies on localStorage for the ID
             currentStudentId = localStorage.getItem('appLoginId');
             if (currentStudentId) {
                 fetchStudentData(currentStudentId);
@@ -100,12 +100,11 @@ async function handleStudentLogin() {
         // 1. Sign in anonymously (or reuse existing session)
         await auth.signInAnonymously();
         
-        // 2. Fetch data (RTDB rules will check if auth.uid matches $studentId)
+        // 2. Fetch data (relies on correct RTDB rules for student read access)
         const studentRef = ref(db, `students/${studentIdInput}`);
         const snapshot = await get(studentRef);
         
         if (snapshot.exists() && snapshot.val().status === 'approved') {
-            // If the security rule check passed, the data is readable
             currentStudentData = snapshot.val();
             currentStudentId = studentIdInput;
             localStorage.setItem('appLoginId', studentIdInput); // Store ID locally
@@ -159,7 +158,6 @@ function logout() {
 function showAuthContainer() {
     document.querySelectorAll('.panel').forEach(el => el.style.display = 'none');
     document.getElementById('auth-container').style.display = 'block';
-    // Clear login messages
     document.getElementById("student-login-message").innerText = "";
     document.getElementById("admin-login-message").innerText = "";
 }
@@ -178,7 +176,6 @@ function initializeStudentPanel(studentData) {
     
     loadStudentPayments(studentData.id);
 
-    // Populate break month selection
     const breakMonthSelect = document.getElementById('break-month-select');
     breakMonthSelect.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
 }
@@ -260,9 +257,16 @@ function filterStudents() {
  * Checks if the current user is logged in via email/password (Admin).
  */
 function checkAdminWritePermission() {
-    if (!auth.currentUser) return false;
+    if (!auth.currentUser) {
+        alert("Permission Denied: You must be logged in as an administrator.");
+        return false;
+    }
     // Check if the user logged in using email/password provider (as per RTDB rules)
-    return auth.currentUser.providerData.some(p => p.providerId === 'password');
+    if (!auth.currentUser.providerData.some(p => p.providerId === 'password')) {
+        alert("Permission Denied: Only users with password authentication can perform this action.");
+        return false;
+    }
+    return true;
 }
 
 /**

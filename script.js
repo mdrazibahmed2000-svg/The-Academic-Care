@@ -40,7 +40,7 @@ async function initializeAppAndAuth() {
         // Set persistence before attempting any auth calls
         await setPersistence(auth, browserSessionPersistence);
         
-        // CRITICAL FIX: Only sign in anonymously IF no user is currently active (prevents password token override)
+        // CRITICAL FIX: Only sign in anonymously IF no user is currently active 
         if (!auth.currentUser) {
             await signInAnonymously(auth); 
         }
@@ -51,7 +51,7 @@ async function initializeAppAndAuth() {
                 const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
 
                 currentUserId = user.uid;
-                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Password' : 'Anonymous'})`; 
+                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Admin' : 'Student/Anon'})`; 
                 
                 checkLoginStatus();
             } else {
@@ -175,6 +175,9 @@ async function handleAdminLoginWithEmail(email, password) {
     errorElement.textContent = '';
     
     try {
+        // Sign out the anonymous user first to prevent token clash
+        await signOut(auth);
+        
         // Sign in with email and password
         await signInWithEmailAndPassword(auth, email, password);
 
@@ -190,7 +193,6 @@ async function handleAdminLoginWithEmail(email, password) {
     }
 }
 
-// FIX for approved student login issue (bypasses data.id check)
 async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
@@ -211,12 +213,11 @@ async function handleStudentLogin(studentId) {
         return;
     }
     
-    // 3. CRITICAL FIX: Prioritize login for approved students by bypassing the strict 'data.id' check.
-    if (data.status === 'approved') {
+    // 3. PROCEED TO LOGIN
+    if (data.status === 'approved' || data.status === 'break') {
         
         currentStudentData = { id: studentId, ...data };
         
-        // PROCEED TO LOGIN
         localStorage.setItem('appLoginId', studentId);
         localStorage.setItem('isAdmin', 'false');
         await initializeStudentPanel(currentStudentData);
@@ -349,11 +350,10 @@ window.approveStudent = async function (studentId) {
     }
 }
 
-// Helper function to check for Admin write permission
+// Helper function to check for Admin write permission (password authentication)
 function checkAdminWritePermission() {
-    return auth.currentUser && 
-           localStorage.getItem('isAdmin') === 'true' && 
-           auth.currentUser.providerData.some(p => p.providerId === 'password');
+    // This is the most accurate check based on your security rules: must be password-authenticated.
+    return auth.currentUser && auth.currentUser.providerData.some(p => p.providerId === 'password');
 }
 
 // CRITICAL: Function to mark a month as PAID
@@ -368,8 +368,8 @@ window.markPaid = async function (studentId, monthKey, method) {
     try {
         await set(feeRef, {
             status: 'paid',
-            paymentMethod: method, 
-            paymentDate: Date.now(),
+            method: method, // Renamed from paymentMethod to match database rule's implied simplicity
+            timestamp: Date.now(), // Renamed from paymentDate
             recordedBy: auth.currentUser.uid 
         });
         
@@ -390,11 +390,14 @@ window.markBreak = async function (studentId, monthKey) {
         return;
     }
 
+    if (!confirm(`Are you sure you want to mark ${monthKey.toUpperCase()} as 'Break' for student ${studentId}?`)) return;
+
+
     try {
         await set(feeRef, {
             status: 'break',
             recordedBy: auth.currentUser.uid,
-            breakDate: Date.now()
+            timestamp: Date.now() // Renamed from breakDate
         });
         
         // After setting break, check if there was a pending request and remove it
@@ -421,7 +424,7 @@ window.undoStatus = async function (studentId, monthKey) {
         return;
     }
 
-    if (!confirm(`Are you sure you want to UNDO the status for ${monthKey}? This will revert it to UNPAID.`)) {
+    if (!confirm(`Are you sure you want to UNDO the status for ${monthKey.toUpperCase()}? This will revert it to UNPAID and remove the record.`)) {
         return;
     }
 
@@ -457,6 +460,7 @@ window.loadMonthlyFees = function () {
 
     onValue(getFeesRef(studentId), (snapshot) => {
         const fees = snapshot.val() || {};
+        // Pass the fee container to the render function
         renderAdminFeeManagement(fees, studentId, feeContainer);
     }, (error) => {
         console.error("Failed to load monthly fees for Admin:", error);
@@ -653,10 +657,11 @@ function renderAdminFeeManagement(fees, studentId, container) {
         
         if (fees[month] && fees[month].status === 'paid') {
             status = 'paid';
-            paymentInfo = `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()} via ${fees[month].paymentMethod})`;
+            // Use 'method' and 'timestamp' which are clearer names in the DB structure
+            paymentInfo = `(Paid on ${new Date(fees[month].timestamp).toLocaleDateString()} via ${fees[month].method})`;
         } else if (fees[month] && fees[month].status === 'break') {
             status = 'break';
-            paymentInfo = `(Break marked on ${new Date(fees[month].breakDate).toLocaleDateString()})`;
+            paymentInfo = `(Break marked on ${new Date(fees[month].timestamp).toLocaleDateString()})`;
         }
 
 
@@ -687,10 +692,25 @@ function renderAdminFeeManagement(fees, studentId, container) {
     });
 }
 
+/**
+ * NEW: Function to handle the Mark Paid prompt requirement.
+ */
 window.openPaymentModal = function(studentId, monthKey) {
-    const method = prompt(`Mark ${monthKey} as paid for ${studentId}. Enter Payment Method (e.g., Cash, Bkash, Nagad):`);
+    const student = allApprovedStudents.find(s => s.id === studentId);
+    const studentName = student ? student.name : studentId;
+    
+    // Uses the native browser prompt, matching the screenshot
+    const method = prompt(`Mark ${monthKey.toUpperCase()} as paid for ${studentName}. Enter Payment Method (e.g., Cash, Bkash, Nagad):`);
+    
     if (method) {
-        markPaid(studentId, monthKey, method);
+        // If method is provided, call the actual database write function
+        markPaid(studentId, monthKey, method.trim());
+    } else if (method === null) {
+        // User clicked cancel
+        // Do nothing
+    } else {
+        // User submitted an empty string
+        alert("Payment status not updated. Payment method cannot be empty.");
     }
 };
 
@@ -745,6 +765,7 @@ window.handleStudentQuery = async function() {
     loader.classList.remove('hidden');
     responseElement.textContent = "Analyzing query...";
 
+    // Simulated network delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
     let response = "I'm sorry, I couldn't find a specific answer for that. Please try asking about **fees**, **payment methods**, **deadlines**, or the **break policy**.";
@@ -758,12 +779,12 @@ window.handleStudentQuery = async function() {
     } else if (query.includes('status') && currentStudentData) {
         const fees = currentStudentData.fees || {};
         const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid' && fees[month]?.status !== 'break')
-                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+                                           .map(m => m.charAt(0).toUpperCase() + m.slice(1));
         
         if (unpaidMonths.length > 0) {
-            response = `Your current status is **${currentStudentData.status}**. You appear to have unpaid fees for: **${unpaidMonths.join(', ')}**. Please prioritize settling these.`;
+            response = `Your current status is **${currentStudentData.status.toUpperCase()}**. You appear to have unpaid fees for: **${unpaidMonths.join(', ')}**. Please prioritize settling these.`;
         } else {
-            response = `Your current status is **${currentStudentData.status}**. Great news! Your fee record seems up-to-date for the currently tracked months.`;
+            response = `Your current status is **${currentStudentData.status.toUpperCase()}**. Great news! Your fee record seems up-to-date for the currently tracked months.`;
         }
     }
     
@@ -785,7 +806,7 @@ window.draftCommunication = async function(studentId) {
     const fees = feeSnapshot.val() || {};
 
     const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid' && fees[month]?.status !== 'break')
-                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+                                           .map(m => m.charAt(0).toUpperCase() + m.slice(1));
 
     const breakRequestSnapshot = await get(getBreakRequestRef(studentId));
     const breakRequest = breakRequestSnapshot.val();
@@ -801,7 +822,7 @@ window.draftCommunication = async function(studentId) {
         message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
         message += `Thank you for your prompt payment! Our records show the student's fees are completely up-to-date or marked as break.\n\n`;
         if (breakRequest) {
-            message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth}. Please review and approve/reject it.\n\n`;
+            message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth.charAt(0).toUpperCase() + breakRequest.requestedForMonth.slice(1)}. Please review and approve/reject it.\n\n`;
         }
         message += `We appreciate your commitment to ${student.name}'s education.`;
     }

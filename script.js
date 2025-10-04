@@ -8,7 +8,6 @@ import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChil
 
 // ====================================================================
 // --- Global Firebase and App Configuration (USING YOUR PROVIDED VALUES) ---
-// NOTE: Ensure these values are correct for your Firebase project.
 // ====================================================================
 
 const firebaseConfig = {
@@ -413,6 +412,30 @@ window.markBreak = async function (studentId, monthKey) {
     }
 }
 
+// NEW FUNCTION: Undo status
+window.undoStatus = async function (studentId, monthKey) {
+    const feeRef = ref(getFeesRef(studentId), monthKey);
+    
+    if (!checkAdminWritePermission()) {
+        alert("PERMISSION DENIED: Undo failed. You must be logged in as an Admin using the email/password.");
+        return;
+    }
+
+    if (!confirm(`Are you sure you want to UNDO the status for ${monthKey}? This will revert it to UNPAID.`)) {
+        return;
+    }
+
+    try {
+        // Deleting the record makes it disappear, reverting to the default UNPAID state
+        await remove(feeRef);
+        alert(`Successfully reverted status for ${monthKey} to UNPAID.`);
+        
+    } catch (e) {
+        console.error("Error undoing status:", e);
+        alert(`DATABASE WRITE ERROR: Failed to undo status for ${monthKey}. Error: ${e.message}`);
+    }
+}
+
 window.loadMonthlyFees = function () {
     const studentId = document.getElementById('studentSelector').value;
     const feeContainer = document.getElementById('monthlyFees'); 
@@ -585,6 +608,7 @@ function renderStudentSelector(students) {
     }
 }
 
+// Renders the fee status for the Student Panel
 function renderFeeStatus(fees, container) {
     container.innerHTML = ''; 
     const monthKeys = getMonthKeys();
@@ -617,6 +641,7 @@ function renderFeeStatus(fees, container) {
     });
 }
 
+// Renders the fee status and management buttons for the Admin Panel
 function renderAdminFeeManagement(fees, studentId, container) {
     container.innerHTML = '';
     const monthKeys = getMonthKeys();
@@ -631,7 +656,7 @@ function renderAdminFeeManagement(fees, studentId, container) {
             paymentInfo = `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()} via ${fees[month].paymentMethod})`;
         } else if (fees[month] && fees[month].status === 'break') {
             status = 'break';
-            paymentInfo = `(Marked as Break on ${new Date(fees[month].breakDate).toLocaleDateString()})`;
+            paymentInfo = `(Break marked on ${new Date(fees[month].breakDate).toLocaleDateString()})`;
         }
 
 
@@ -639,18 +664,23 @@ function renderAdminFeeManagement(fees, studentId, container) {
         // Use different border colors for different statuses
         let borderColor = 'border-red-500'; // unpaid
         if (status === 'paid') borderColor = 'border-green-500';
-        if (status === 'break') borderColor = 'border-blue-500';
+        if (status === 'break') borderColor = 'border-orange-500'; // Orange for break
         
         li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm', 'border-l-4', borderColor);
         
         li.innerHTML = `
-            <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="status-${status}">${status.toUpperCase()}</span></div>
+            <div class="font-bold text-lg">
+                ${month.charAt(0).toUpperCase() + month.slice(1)}: 
+                <span class="status-${status}">${status.toUpperCase()}</span>
+            </div>
             <small class="text-gray-500">${paymentInfo}</small>
             <div class="mt-2 space-x-2">
                 ${status === 'unpaid' ? `
                     <button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>
                     <button class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded text-sm" onclick="markBreak('${studentId}', '${month}')">Mark Break</button>
-                ` : ''}
+                ` : `
+                    <button class="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded text-sm" onclick="undoStatus('${studentId}', '${month}')">Undo Status</button>
+                `}
             </div>
         `;
         container.appendChild(li);

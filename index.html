@@ -1,98 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Academic Care</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic Care Portal</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body>
+<body class="bg-gray-100">
 
-<!-- Login Page -->
-<div class="container" id="loginContainer">
-    <h2>The Academic Care</h2>
-    <input type="text" id="userID" placeholder="Enter Student ID or type 'admin'">
-    <div id="adminLoginFields" class="hidden">
-        <input type="email" id="adminEmail" placeholder="Admin Email">
-        <input type="password" id="adminPassword" placeholder="Password">
-    </div>
-    <button id="loginBtn">Log In</button>
-    <button id="applyBtn">Apply for Registration</button>
-    <div id="message"></div>
-</div>
+  <div class="container mx-auto p-6 max-w-3xl">
 
-<!-- Registration Page -->
-<div id="registrationContainer" class="container hidden">
-    <h2>Apply for Registration</h2>
-    <form id="registrationForm">
-        <input type="text" id="name" placeholder="Student Name" required>
-        <input type="text" id="class" placeholder="Class (e.g., 07)" required>
-        <input type="text" id="roll" placeholder="Roll" required>
-        <input type="text" id="guardian" placeholder="Guardian No." required>
-        <button type="submit">Submit Registration</button>
-    </form>
-    <div id="studentIDDisplay"></div>
-    <button id="backToLogin">Back to Login</button>
-</div>
+    <h1 class="text-3xl font-bold text-indigo-600 text-center mb-6">
+      Academic Care Portal
+    </h1>
 
-<!-- Student Panel -->
-<div id="studentPanel" class="container hidden">
-    <h1>The Academic Care</h1>
-    <p>Academic Year: 2025</p>
-    <button id="profileBtn">My Profile</button>
-    <button id="tuitionBtn">Tuition Fee Status</button>
-    <button id="breakBtn">Request Break</button>
-
-    <div id="profile" class="hidden">
-        <h3>My Profile</h3>
-        <p id="profileInfo"></p>
+    <!-- Login Page -->
+    <div id="login-page" class="card">
+      <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
+      <input id="studentId" type="text" placeholder="Student ID or admin" class="input mb-2" />
+      <p id="loginError" class="text-red-600 text-sm mb-2"></p>
+      <button onclick="login()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white w-full mb-2">Login</button>
+      <button onclick="showRegister()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Register New Student</button>
     </div>
 
-    <div id="tuition" class="hidden">
-        <h3>Tuition Fee Status</h3>
+    <!-- Register Page -->
+    <div id="register-page" class="card hidden">
+      <h2 class="text-xl font-semibold mb-4 text-center">Student Registration</h2>
+      <input id="regName" type="text" placeholder="Full Name" class="input mb-2" />
+      <input id="regClass" type="number" placeholder="Class" class="input mb-2" />
+      <input id="regRoll" type="number" placeholder="Roll" class="input mb-2" />
+      <input id="regGuardian" type="text" placeholder="Guardian Name" class="input mb-2" />
+      <button onclick="registerStudent()" class="btn bg-green-500 hover:bg-green-600 text-white w-full mb-2">Submit</button>
+      <button onclick="showLogin()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Back to Login</button>
+    </div>
+
+    <!-- Student Dashboard -->
+    <div id="dashboard" class="hidden card">
+      <button onclick="logout()" class="absolute top-4 right-6 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded">Logout</button>
+      <h2 id="studentName" class="text-xl font-semibold mb-4 text-center"></h2>
+      <div id="studentFees" class="text-sm"></div>
+    </div>
+
+    <div id="adminPanel" class="container hidden">
+    <h1>Admin Panel</h1>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tabBtn" data-tab="pending">Pending Students</button>
+        <button class="tabBtn" data-tab="class07">Class 07</button>
+        <button class="tabBtn" data-tab="class08">Class 08</button>
+        <button class="tabBtn" data-tab="class09">Class 09</button>
+        <!-- Add more class tabs as needed -->
+    </div>
+
+    <!-- Tab contents -->
+    <div id="pending" class="tabContent">
+        <h3>Pending Students</h3>
+        <ul id="pendingStudents"></ul>
+    </div>
+
+    <div id="class07" class="tabContent hidden">
+        <h3>Class 07</h3>
+        <ul id="class07Students"></ul>
+    </div>
+    <div id="class08" class="tabContent hidden">
+        <h3>Class 08</h3>
+        <ul id="class08Students"></ul>
+    </div>
+    <div id="class09" class="tabContent hidden">
+        <h3>Class 09</h3>
+        <ul id="class09Students"></ul>
+    </div>
+
+    <div id="studentDetail" class="tabContent hidden">
+        <h3>Student Details</h3>
+        <div id="studentInfo"></div>
         <table>
             <thead>
-                <tr><th>Month</th><th>Status</th></tr>
+                <tr><th>Month</th><th>Status</th><th>Action</th></tr>
             </thead>
-            <tbody id="tuitionTable"></tbody>
+            <tbody id="studentTuitionTable"></tbody>
         </table>
     </div>
-
-    <div id="break" class="hidden">
-        <h3>Request Break</h3>
-        <label for="breakMonths">Number of months:</label>
-        <input type="number" id="breakMonths" min="1" max="12">
-        <button id="requestBreakBtn">Request</button>
-        <p id="breakMessage"></p>
-    </div>
 </div>
 
-<!-- Admin Panel -->
-<div id="adminPanel" class="container hidden">
-    <h1>Admin Panel</h1>
-    <h3>Pending Students</h3>
-    <ul id="pendingStudents"></ul>
 
-    <h3>Mark Tuition Paid</h3>
-    <input type="text" id="tuitionStudentID" placeholder="Enter Student ID">
-    <select id="tuitionMonth">
-        <option value="">Select Month</option>
-        <option value="January">January</option>
-        <option value="February">February</option>
-        <option value="March">March</option>
-        <option value="April">April</option>
-        <option value="May">May</option>
-        <option value="June">June</option>
-        <option value="July">July</option>
-        <option value="August">August</option>
-        <option value="September">September</option>
-        <option value="October">October</option>
-        <option value="November">November</option>
-        <option value="December">December</option>
-    </select>
-    <button id="markPaidBtn">Mark Paid</button>
-</div>
+  </div>
 
-<script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

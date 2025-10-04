@@ -3,132 +3,137 @@
 /* ======================================================= */
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
-    color: #333;
-    padding-bottom: 50px; /* Space for the bottom footer/info */
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    padding-bottom: 50px; /* Space for the bottom footer/info */
 }
 
 /* Basic Container & Card Styling */
 .container {
-    max-width: 420px;
-    margin: 50px auto;
-    padding: 20px;
+    max-width: 420px;
+    margin: 50px auto;
+    padding: 20px;
 }
 
 .card {
-    background-color: white;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
 }
 
 h2 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #374151; /* Dark Gray */
-    margin-bottom: 15px;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 10px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #374151; /* Dark Gray */
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 10px;
 }
 
 /* Form Elements */
 input[type="text"],
 input[type="password"],
-select {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
 /* Base Button Styling */
 button {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: 600;
 }
 
 /* ======================================================= */
 /* --- CUSTOM COMPONENT STYLES --- */
 /* ======================================================= */
 
+.hidden {
+    display: none !important;
+}
+
 #authUserId {
-    text-align: center;
-    font-size: 0.75rem;
-    color: #6b7280; /* Gray */
-    margin-bottom: 15px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #6b7280; /* Gray */
+    margin-bottom: 15px;
 }
 
 #welcomeHeader {
-    text-align: center;
-    font-size: 1.875rem;
-    font-weight: 800;
-    color: #4f46e5; /* Indigo */
-    margin-bottom: 30px;
+    text-align: center;
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #4f46e5; /* Indigo */
+    margin-bottom: 30px;
 }
 
-/* Admin Panel Sections */
+/* Admin Panel Collapsibles */
 .collapsible-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding-top: 5px;
+    padding-bottom: 5px;
 }
 
 .collapsible-header {
-    background-color: #f3f4f6;
-    padding: 12px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background-color: #f3f4f6;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Fee Management List (Admin) */
 #monthlyFees > li {
-    border-left-style: solid;
-    border-left-width: 4px; /* Matches border-l-4 utility */
+    border-left-style: solid;
+    border-left-width: 4px; /* Matches border-l-4 utility */
 }
 
 /* Monthly Payments List (Student) */
 #feeStatusList > li {
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
 }
 #feeStatusList > li:last-child {
-    border-bottom: none;
+    border-bottom: none;
 }
 
 /* Modal Styling */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 .modal-content {
-    background-color: white;
-    padding: 25px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 
@@ -137,39 +142,37 @@ button {
 /* ======================================================= */
 
 /* Student Panel Status Tags (background/text color) */
-/* The span tag with class="status-..." has this background and white text */
 .status-paid {
-    background-color: #34d399; /* Green for paid */
-    color: white;
+    background-color: #34d399; /* Green for paid */
+    color: white;
 }
 .status-unpaid {
-    background-color: #f87171; /* Red for unpaid */
-    color: white;
+    background-color: #f87171; /* Red for unpaid */
+    color: white;
 }
 .status-break {
-    background-color: #f97316; /* Orange for break */
-    color: white;
+    background-color: #f97316; /* Orange for break */
+    color: white;
 }
 
 /* Admin Panel Status Text Color */
-/* This defines the color of the capitalized status text (e.g., "PAID") */
 .status-paid { color: #10b981; } /* Tailwind green-500 */
 .status-unpaid { color: #ef4444; } /* Tailwind red-500 */
 .status-break { color: #f97316; } /* Tailwind orange-500 */
 
 /* Admin Panel Border Colors (Used for <li> border-l-4) */
 .border-red-500 {
-    border-left-color: #ef4444;
+    border-left-color: #ef4444;
 }
 .border-green-500 {
-    border-left-color: #10b981;
+    border-left-color: #10b981;
 }
 .border-orange-500 {
-    border-left-color: #f97316;
+    border-left-color: #f97316;
 }
 
 /* ======================================================= */
-/* --- ADMIN BUTTON STYLES (MATCHING JS) --- */
+/* --- BUTTON STYLES (MATCHING JS) --- */
 /* ======================================================= */
 
 /* Mark Paid Button (Blue) */

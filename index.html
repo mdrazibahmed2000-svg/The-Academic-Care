@@ -1,119 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Care Fee Portal</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Academic Care Portal</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
-<body>
+<body class="bg-gray-100">
 
-    <div class="container">
-        <header>
-            <h1 id="welcomeHeader" class="text-3xl font-extrabold mb-4 text-center text-indigo-700">The Academic Care</h1>
-            <p id="authUserId" class="text-xs text-center text-gray-500 mb-6">Auth User ID: N/A (Logged Out)</p>
-        </header>
+  <div class="container mx-auto p-6 max-w-3xl">
 
-        <div id="initialView" class="card">
-            <h2 class="text-xl">Login</h2>
-            <input type="text" id="loginId" placeholder="Enter Student ID or 'admin'">
-            <p id="loginError" class="error-message text-red-500 mb-3"></p>
-            <button onclick="login()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 mb-3">Login</button>
-            <button onclick="showRegister()" class="w-full bg-gray-400 hover:bg-gray-500 text-white py-2">Register New Student</button>
-        </div>
+    <h1 class="text-3xl font-bold text-indigo-600 text-center mb-6">
+      Academic Care Portal
+    </h1>
 
-        <div id="registerView" class="card hidden">
-            <h2 class="text-xl">Student Registration</h2>
-            <input type="text" id="regName" placeholder="Student Name" required>
-            <input type="text" id="regClass" placeholder="Class (e.g., 09, 10)" required>
-            <input type="text" id="regRoll" placeholder="Roll No." required>
-            <input type="text" id="regGuardianPhone" placeholder="Guardian Phone No." required>
-            <p id="registerError" class="error-message text-red-500 mb-3"></p>
-            <button onclick="registerStudent()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 mb-3">Submit Registration</button>
-            <button onclick="showLogin()" class="w-full bg-gray-400 hover:bg-gray-500 text-white py-2">Back to Login</button>
-        </div>
-
-        <div id="dashboardView" class="hidden">
-
-            <div id="adminPanel" class="hidden">
-                <div class="card">
-                    <h2 class="text-xl">Fee Management</h2>
-                    <select id="studentSelector" onchange="loadMonthlyFees()">
-                        <option value="">Select Student...</option>
-                    </select>
-
-                    <div id="draftCommButton" class="mt-4 mb-4">
-                        </div>
-
-                    <ul id="monthlyFees" class="list-none p-0">
-                        </ul>
-                </div>
-
-                <div class="card">
-                    <div class="collapsible-header" onclick="toggleCollapsible('pendingStudentsContent')">
-                        <span>Pending Registrations <span id="pendingCount" class="text-sm">(0)</span></span>
-                        <span>&#9662;</span>
-                    </div>
-                    <div id="pendingStudentsContent" class="collapsible-content">
-                        <ul id="pendingStudentsList" class="list-none p-0"></ul>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="collapsible-header" onclick="toggleCollapsible('breakRequestsContent')">
-                        <span>Break Requests <span id="breakCount" class="text-sm">(0)</span></span>
-                        <span>&#9662;</span>
-                    </div>
-                    <div id="breakRequestsContent" class="collapsible-content">
-                        <div id="breakRequestsList" class="p-2"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="studentPanel" class="hidden">
-                <div class="card">
-                    <h2 class="text-xl">My Details</h2>
-                    <p class="mb-2"><strong>ID:</strong> <span id="studentIdDisplay"></span></p>
-                    <p class="mb-2"><strong>Class:</strong> <span id="studentClass"></span></p>
-                    <p class="mb-2"><strong>Status:</strong> <span id="studentStatus" class="font-bold text-green-600"></span></p>
-                </div>
-                
-                <div class="card">
-                    <h2 class="text-xl">Monthly Fee Status</h2>
-                    <ul id="feeStatusList" class="list-none p-0">
-                        </ul>
-                    <div id="breakRequestArea">
-                        </div>
-                </div>
-                
-                <div class="card">
-                    <h2 class="text-xl">Ask Assistant (AI)</h2>
-                    <textarea id="geminiQuery" rows="2" placeholder="Ask about fees, deadlines, or break policy..."></textarea>
-                    <button onclick="handleStudentQuery()" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 mb-2">Ask Question</button>
-                    <div id="geminiLoader" class="text-center hidden"><img src="loading.gif" alt="Loading..." style="width: 20px; display: inline-block;"> Thinking...</div>
-                    <div id="geminiResponse" class="mt-3 p-3 bg-gray-100 rounded text-sm"></div>
-                </div>
-            </div>
-
-            <div class="mt-6 text-center">
-                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white py-2 px-6">Logout</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="communicationModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2 class="text-xl">Drafted Fee Communication</h2>
-            <textarea id="draftedCommunication" rows="6" class="w-full p-2 border rounded" readonly></textarea>
-            <div id="communicationLoader" class="text-center hidden mt-2">Drafting...</div>
-            <div class="flex justify-between mt-3">
-                <button onclick="copyToClipboard('draftedCommunication')" class="bg-green-500 hover:bg-green-600 text-white py-2 text-sm">Copy Message</button>
-                <button onclick="closeModal()" class="bg-gray-400 hover:bg-gray-500 text-white py-2 text-sm">Close</button>
-            </div>
-        </div>
+    <!-- Login Page -->
+    <div id="login-page" class="card">
+      <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
+      <input id="studentId" type="text" placeholder="Student ID or admin" class="input mb-2" />
+      <p id="loginError" class="text-red-600 text-sm mb-2"></p>
+      <button onclick="login()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white w-full mb-2">Login</button>
+      <button onclick="showRegister()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Register New Student</button>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <!-- Register Page -->
+    <div id="register-page" class="card hidden">
+      <h2 class="text-xl font-semibold mb-4 text-center">Student Registration</h2>
+      <input id="regName" type="text" placeholder="Full Name" class="input mb-2" />
+      <input id="regClass" type="number" placeholder="Class" class="input mb-2" />
+      <input id="regRoll" type="number" placeholder="Roll" class="input mb-2" />
+      <input id="regGuardian" type="text" placeholder="Guardian Name" class="input mb-2" />
+      <button onclick="registerStudent()" class="btn bg-green-500 hover:bg-green-600 text-white w-full mb-2">Submit</button>
+      <button onclick="showLogin()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Back to Login</button>
+    </div>
 
+    <!-- Student Dashboard -->
+    <div id="dashboard" class="hidden card">
+      <button onclick="logout()" class="absolute top-4 right-6 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded">Logout</button>
+      <h2 id="studentName" class="text-xl font-semibold mb-4 text-center"></h2>
+      <div id="studentFees" class="text-sm"></div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="hidden">
+      <div class="card mb-4">
+        <h3 class="text-lg font-bold text-yellow-600 mb-2">Pending Students</h3>
+        <ul id="pendingStudents" class="list-disc pl-5"></ul>
+      </div>
+
+      <div class="card mb-4">
+        <h3 class="text-lg font-bold text-green-600 mb-2">Approved Students</h3>
+        <ul id="approvedStudents" class="list-disc pl-5"></ul>
+      </div>
+
+      <div class="card">
+        <h3 class="text-lg font-bold text-blue-600 mb-2">Monthly Fee Management</h3>
+        <select id="studentSelector" onchange="loadMonthlyFees()" class="input mb-3"></select>
+        <ul id="monthlyFees"></ul>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

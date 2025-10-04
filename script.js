@@ -27,9 +27,9 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 let currentLoggedInStudentId = null;
-let currentAdminViewStudentId = null; // For tracking the student in Admin Detail view
+let currentAdminViewStudentId = null; 
 
-// DOM Elements (IDs are based on your provided HTML structure)
+// DOM Elements
 const userID = document.getElementById("userID");
 const adminLoginFields = document.getElementById("adminLoginFields");
 const loginContainer = document.getElementById("loginContainer");
@@ -59,6 +59,7 @@ const classLists = {
     "10": document.getElementById("class10Students")
 };
 
+// Fixed array for calendar month order (CRITICAL for sorting fix)
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 
@@ -113,13 +114,13 @@ function showPanel(targetPanel) {
     messageDiv.textContent = "";
 
     if (targetPanel === adminPanel) {
-        // Automatically load and display the Pending Students list on Admin panel entry
         loadAdminData(); 
         handleAdminTabChange({ target: document.querySelector('.tabBtn[data-tab="pending"]') });
     } else if (targetPanel === studentPanel) {
-        // Load initial student data on panel entry
         if (currentLoggedInStudentId) {
             loadStudentData(currentLoggedInStudentId);
+            // Ensure the profile is shown by default
+            toggleStudentPanelContent(profileSection); 
         }
     }
 }
@@ -142,11 +143,6 @@ function handleAdminTabChange(e) {
     tabBtn.classList.add("active");
     const targetContent = document.getElementById(tabName);
     if (targetContent) targetContent.classList.remove("hidden");
-    
-    // Only load data if it's a class tab
-    if (tabName.startsWith('class')) {
-        // Data is already loaded by loadAdminData, just show the list
-    }
 }
 
 // ====================================================================
@@ -163,7 +159,6 @@ async function handleLogin() {
         if (!email || !password) { messageDiv.textContent = "Enter admin email/password"; return; }
         
         try {
-            // Attempt Admin login (Password authentication)
             await signInWithEmailAndPassword(auth, email, password);
             showPanel(adminPanel);
         } catch (e) { 
@@ -186,13 +181,11 @@ async function handleLogin() {
                 messageDiv.textContent = 'Registration pending admin approval.';
                 return;
             }
-
-            // Student is approved. Set the user ID for the session.
-            currentLoggedInStudentId = id;
-            // NOTE: In a production app, you would need to implement a secure student-specific authentication flow here, 
-            // e.g., using a separate student password/PIN stored securely, or Firebase Custom Tokens. 
-            // For this project structure, we rely on the simple check and the security rules.
             
+            // Critical Step: Since we are using an ID-based login without a password, 
+            // we rely on the Security Rules (auth.uid check) and the 'approved' flag.
+            // currentLoggedInStudentId is set here for client-side functionality.
+            currentLoggedInStudentId = id;
             showPanel(studentPanel);
 
         } catch (e) {
@@ -206,12 +199,10 @@ async function handleLogout() {
     currentLoggedInStudentId = null;
     currentAdminViewStudentId = null;
 
-    // Check if an authenticated user exists (Admin)
     if (auth.currentUser && auth.currentUser.providerData.some(p => p.providerId === 'password')) {
         await signOut(auth);
         messageDiv.textContent = "Admin logged out successfully";
     } else {
-        // Student/Anonymous logout
         messageDiv.textContent = "Logged out successfully";
     }
     showPanel(loginContainer);
@@ -241,7 +232,6 @@ async function handleRegistration(e) {
             return;
         }
 
-        // Initialize tuition status for 12 months (crucial for future break/fee logic)
         const tuitionStatus = {};
         MONTHS.forEach(month => {
             tuitionStatus[month] = { paid: false, date: null };
@@ -253,13 +243,13 @@ async function handleRegistration(e) {
             class: studentClass,
             roll: roll,
             guardian: guardian,
-            approved: false, // Key field for admin approval
+            approved: false,
             tuitionStatus: tuitionStatus,
             breakRequested: 0,
             registeredAt: Date.now()
         });
 
-        studentIDDisplay.textContent = `Registration submitted! Your Student ID is: ${newId}. Please wait for admin approval.`;
+        studentIDDisplay.innerHTML = `Registration submitted! Your Student ID: <strong>${newId}</strong>. Please wait for admin approval.`;
         registrationForm.reset();
         
     } catch (error) {
@@ -282,11 +272,10 @@ function resetLoginForm() {
 
 function loadStudentData(studentId) {
     const studentRef = ref(db, `students/${studentId}`);
-    // Use onValue for real-time profile/fee updates
     onValue(studentRef, (snapshot) => {
         const studentData = snapshot.val();
         if (!studentData) {
-            handleLogout(); // Student record deleted
+            handleLogout(); 
             return;
         }
         renderStudentProfile(studentData);
@@ -306,6 +295,7 @@ function renderStudentProfile(data) {
     `;
 }
 
+// 🐛 FIXED: Renders months in Calendar Order (Jan-Dec)
 function renderStudentFeeTable(tuitionStatus) {
     if (!tuitionTableBody) return;
     tuitionTableBody.innerHTML = '';
@@ -340,8 +330,7 @@ async function handleBreakRequest() {
 
     let lastPaidOrUnpaidIndex = -1; 
     
-    // 2. Find the index of the last month that has a payment status (paid/unpaid)
-    // NOTE: This logic assumes 'unpaid' means the month is actively being tracked.
+    // 2. Find the index of the last month that has a payment status
     MONTHS.forEach((month, index) => {
         const data = tuitionStatus[month];
         if (data && (data.paid === true || data.paid === false)) {
@@ -349,8 +338,7 @@ async function handleBreakRequest() {
         }
     });
 
-    // 3. Determine the starting month for the break
-    // The break must start AFTER the latest of (Last Recorded Month) or (Current Month).
+    // 3. Determine the starting month for the break: one month after the last recorded/current month (whichever is later)
     let startMonthIndex = Math.max(lastPaidOrUnpaidIndex, currentMonthIndex) + 1;
     
     if (startMonthIndex >= 12) {
@@ -384,7 +372,7 @@ async function handleBreakRequest() {
                 startMonth: startMonth,
                 endMonth: endMonth,
                 requestedAt: Date.now(),
-                status: 'pending' // Admin must approve this separately
+                status: 'pending' 
             }
         });
         breakMessage.textContent = `Break request for ${requestedMonths} months (starting ${startMonth}) submitted successfully. Wait for admin approval.`;
@@ -396,20 +384,18 @@ async function handleBreakRequest() {
 
 
 // ====================================================================
-// --- Admin Panel Logic ---
+// --- Admin Panel Logic (Real-time) ---
 // ====================================================================
 
 function loadAdminData() {
     if (!auth.currentUser || !auth.currentUser.providerData.some(p => p.providerId === 'password')) {
-        // Data should not load if not Admin, but security rules are the primary block
         return; 
     }
     
     const studentsRef = ref(db, "students");
 
-    // Use onValue for real-time updates across all Admin lists
+    // CRITICAL: onValue for real-time list updates
     onValue(studentsRef, (snapshot) => {
-        // Clear all lists
         pendingStudentsList.innerHTML = "";
         Object.values(classLists).forEach(list => list.innerHTML = "");
 
@@ -420,7 +406,7 @@ function loadAdminData() {
         Object.values(students).forEach(student => {
             let cls = student.class;
             
-            // 1. Pending students (approved: false)
+            // 1. Pending students
             if (student.approved === false) {
                 const li = document.createElement("li");
                 li.innerHTML = `
@@ -449,7 +435,6 @@ function loadAdminData() {
 async function handleApproveStudent(e) {
     if (!e.target.classList.contains("approveBtn")) return;
     
-    // Check for Admin status again before write (defense in depth)
     if (!auth.currentUser || !auth.currentUser.providerData.some(p => p.providerId === 'password')) {
         alert("Permission Denied: Admin password authentication required.");
         return;
@@ -463,7 +448,6 @@ async function handleApproveStudent(e) {
             approvedAt: Date.now()
         });
         alert(`Student ${studentID} approved and moved to class list.`);
-        // loadAdminData listener handles the UI refresh automatically
     } catch (error) {
         alert(`Failed to approve student. Check Security Rules: ${error.message}`);
     }
@@ -474,7 +458,6 @@ function handleViewStudentDetail(e) {
     const studentID = e.target.dataset.id;
     currentAdminViewStudentId = studentID;
     
-    // Switch to Student Detail tab
     document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
     const detailTabBtn = document.querySelector('.tabBtn[data-tab="studentDetail"]');
     if (detailTabBtn) detailTabBtn.classList.add("active");
@@ -482,14 +465,12 @@ function handleViewStudentDetail(e) {
     document.querySelectorAll(".tabContent").forEach(c => c.classList.add("hidden"));
     document.getElementById("studentDetail").classList.remove("hidden");
     
-    // Load data for detail view
     loadStudentDetailData(studentID);
 }
 
 function loadStudentDetailData(studentId) {
     const studentRef = ref(db, `students/${studentId}`);
     
-    // Use onValue for real-time updates on this specific student's record
     onValue(studentRef, (snapshot) => {
         const student = snapshot.val();
         if (!student) {
@@ -511,7 +492,7 @@ function loadStudentDetailData(studentId) {
     });
 }
 
-
+// 🐛 FIXED: Renders months in Calendar Order (Jan-Dec)
 function renderAdminFeeTable(studentId, tuitionStatus) {
     if (!studentTuitionTableBody) return;
     studentTuitionTableBody.innerHTML = "";
@@ -528,7 +509,6 @@ function renderAdminFeeTable(studentId, tuitionStatus) {
         tdMonth.textContent = month;
         tdStatus.innerHTML = `<span class="${data.paid ? 'paid' : 'unpaid'}">${statusText}</span>`;
         
-        // Action Buttons
         if (data.paid) {
             tdAction.innerHTML = `<button onclick="undoStatus('${studentId}', '${month}')">Undo Status</button>`;
         } else {
@@ -540,7 +520,9 @@ function renderAdminFeeTable(studentId, tuitionStatus) {
     });
 }
 
-// Global functions for Admin actions (must be window-scoped)
+// ====================================================================
+// --- Global Admin Action Functions (Must be window-scoped) ---
+// ====================================================================
 window.markPaid = async function(studentId, month) {
     if (!auth.currentUser || !auth.currentUser.providerData.some(p => p.providerId === 'password')) {
         alert("Permission Denied: Admin password authentication required.");
@@ -555,7 +537,6 @@ window.markPaid = async function(studentId, month) {
                 method: method,
                 recordedBy: auth.currentUser.uid
             });
-            // UI will update automatically
         } catch (error) {
             alert(`Error marking paid. Check Security Rules: ${error.message}`);
         }
@@ -570,12 +551,11 @@ window.markBreak = async function(studentId, month) {
     if (confirm(`Confirm marking ${month} as a Break month for ${studentId}?`)) {
         try {
             await update(ref(db, `students/${studentId}/tuitionStatus/${month}`), {
-                paid: false, // Mark as unpaid/break status
+                paid: false, 
                 isBreak: true,
                 date: new Date().toLocaleDateString(),
                 recordedBy: auth.currentUser.uid
             });
-            // UI will update automatically
         } catch (error) {
             alert(`Error marking break. Check Security Rules: ${error.message}`);
         }
@@ -589,7 +569,6 @@ window.undoStatus = async function(studentId, month) {
     }
     if (confirm(`Are you sure you want to UNDO the status for ${month}? This will revert it to UNPAID.`)) {
         try {
-            // Revert status to initial UNPAID state
             await update(ref(db, `students/${studentId}/tuitionStatus/${month}`), {
                 paid: false,
                 date: null,
@@ -597,7 +576,6 @@ window.undoStatus = async function(studentId, month) {
                 isBreak: false,
                 recordedBy: null
             });
-            // UI will update automatically
         } catch (error) {
             alert(`Error undoing status. Check Security Rules: ${error.message}`);
         }

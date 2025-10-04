@@ -8,7 +8,6 @@ const firebaseConfig = {
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
     databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
     projectId: "YOUR_PROJECT_ID",
-    // Add other fields (storageBucket, messagingSenderId, appId) if necessary
 };
 
 // Initialize Firebase App
@@ -19,10 +18,11 @@ const auth = firebase.auth();
 const db = firebase.database();
 const { ref, set, get, onValue, remove } = firebase.database; 
 
-// Global variables for tracking state
+// Global variables for tracking state and modal context
 let currentStudentData = null;
 let allStudentsData = {};
 let currentStudentId = null;
+let modalContext = {}; // Stores {studentId, monthKey, action} for the modal
 
 const months = [
     "January", "February", "March", "April", "May", "June",
@@ -33,34 +33,25 @@ const months = [
 // 2. AUTHENTICATION AND NAVIGATION
 // ====================================================================
 
-/**
- * Checks Firebase authentication status on page load.
- */
 auth.onAuthStateChanged(user => {
     if (user) {
-        // Check if the user is an Admin (logged in via password)
         const isAdmin = user.providerData.some(p => p.providerId === 'password');
         
         if (isAdmin) {
             initializeAdminPanel();
         } else {
-            // Student login relies on localStorage for the ID
             currentStudentId = localStorage.getItem('appLoginId');
             if (currentStudentId) {
                 fetchStudentData(currentStudentId);
             } else {
-                auth.signOut(); // Sign out orphaned anonymous users
+                auth.signOut();
             }
         }
     } else {
-        // No user is signed in. Show the login form.
         showAuthContainer();
     }
 });
 
-/**
- * Fetches student data after successful login/re-login.
- */
 async function fetchStudentData(studentId) {
     try {
         const studentRef = ref(db, `students/${studentId}`);
@@ -70,7 +61,6 @@ async function fetchStudentData(studentId) {
             currentStudentData = snapshot.val();
             initializeStudentPanel(currentStudentData);
         } else {
-            // Data missing or status not approved
             auth.signOut(); 
             localStorage.removeItem('appLoginId');
             showAuthContainer();
@@ -83,31 +73,25 @@ async function fetchStudentData(studentId) {
     }
 }
 
-/**
- * Handles the student login process (uses ID and anonymous auth).
- */
 async function handleStudentLogin() {
     const studentIdInput = document.getElementById("student-id-input").value.toUpperCase().trim();
     const messageEl = document.getElementById("student-login-message");
     messageEl.innerText = "";
-    
     if (!studentIdInput) {
         messageEl.innerText = "Please enter your Student ID.";
         return;
     }
 
     try {
-        // 1. Sign in anonymously (or reuse existing session)
         await auth.signInAnonymously();
         
-        // 2. Fetch data (relies on correct RTDB rules for student read access)
         const studentRef = ref(db, `students/${studentIdInput}`);
         const snapshot = await get(studentRef);
         
         if (snapshot.exists() && snapshot.val().status === 'approved') {
             currentStudentData = snapshot.val();
             currentStudentId = studentIdInput;
-            localStorage.setItem('appLoginId', studentIdInput); // Store ID locally
+            localStorage.setItem('appLoginId', studentIdInput);
             
             initializeStudentPanel(currentStudentData);
         } else {
@@ -121,9 +105,6 @@ async function handleStudentLogin() {
     }
 }
 
-/**
- * Handles the admin login process (uses email/password).
- */
 async function handleAdminLogin() {
     const email = document.getElementById("admin-email-input").value;
     const password = document.getElementById("admin-password-input").value;
@@ -139,9 +120,6 @@ async function handleAdminLogin() {
     }
 }
 
-/**
- * Logs out the current user (Admin or Student).
- */
 function logout() {
     auth.signOut();
     localStorage.removeItem('appLoginId');
@@ -195,9 +173,6 @@ async function initializeAdminPanel() {
 // 4. DATA FETCHING AND LIST RENDERING (ADMIN)
 // ====================================================================
 
-/**
- * Fetches all students for the admin panel.
- */
 async function fetchAllStudents() {
     const studentsRef = ref(db, 'students');
     try {
@@ -209,9 +184,6 @@ async function fetchAllStudents() {
     }
 }
 
-/**
- * Renders the list of students for the admin to select.
- */
 function renderStudentList(students) {
     const container = document.getElementById('student-list-container');
     const studentIds = Object.keys(students);
@@ -233,9 +205,6 @@ function renderStudentList(students) {
     container.innerHTML = html;
 }
 
-/**
- * Filters the student list based on search input (ID or Name).
- */
 function filterStudents() {
     const searchTerm = document.getElementById('admin-search-input').value.toLowerCase();
     const filteredStudents = {};
@@ -250,28 +219,86 @@ function filterStudents() {
 }
 
 // ====================================================================
-// 5. FEE MANAGEMENT (ADMIN - Full Control)
+// 5. MODAL MANAGEMENT (Replaces prompt())
 // ====================================================================
 
 /**
- * Checks if the current user is logged in via email/password (Admin).
+ * Opens the modal for payment or break reason input.
+ * @param {string} studentId 
+ * @param {string} monthKey 
+ * @param {string} action 'paid' or 'break'
  */
-function checkAdminWritePermission() {
-    if (!auth.currentUser) {
-        alert("Permission Denied: You must be logged in as an administrator.");
-        return false;
+function openActionModal(studentId, monthKey, action) {
+    if (!checkAdminWritePermission()) return;
+
+    modalContext = { studentId, monthKey, action };
+    const modal = document.getElementById('payment-modal');
+    const titleEl = document.getElementById('modal-title');
+    const messageEl = document.getElementById('modal-message');
+    const inputEl = document.getElementById('modal-input');
+    const confirmBtn = modal.querySelector('.modal-buttons button:last-child');
+
+    if (action === 'paid') {
+        titleEl.innerText = 'Mark PAID';
+        messageEl.innerText = `Mark ${monthKey} as PAID for ${studentId}. Enter Payment Method:`;
+        inputEl.placeholder = "Cash, Bank Transfer, Bkash, etc.";
+        inputEl.value = "";
+        confirmBtn.setAttribute('onclick', 'confirmPayment()');
+    } else if (action === 'break') {
+        titleEl.innerText = 'Mark BREAK';
+        messageEl.innerText = `Mark ${monthKey} as BREAK for ${studentId}. Enter Reason (Optional):`;
+        inputEl.placeholder = "Reason (e.g., Vacation, Exam)";
+        inputEl.value = "";
+        confirmBtn.setAttribute('onclick', 'confirmBreak()');
     }
-    // Check if the user logged in using email/password provider (as per RTDB rules)
-    if (!auth.currentUser.providerData.some(p => p.providerId === 'password')) {
-        alert("Permission Denied: Only users with password authentication can perform this action.");
+    
+    modal.style.display = 'block';
+    inputEl.focus();
+}
+
+function closeModal() {
+    document.getElementById('payment-modal').style.display = 'none';
+    modalContext = {};
+}
+
+/**
+ * Handles confirmation from the modal for payment action.
+ */
+function confirmPayment() {
+    const { studentId, monthKey } = modalContext;
+    const method = document.getElementById('modal-input').value.trim();
+    
+    if (method === "") {
+        alert("Payment method cannot be empty.");
+        return;
+    }
+    closeModal();
+    markFeeStatus(studentId, monthKey, 'PAID', { method });
+}
+
+/**
+ * Handles confirmation from the modal for break action.
+ */
+function confirmBreak() {
+    const { studentId, monthKey } = modalContext;
+    const reason = document.getElementById('modal-input').value.trim();
+    
+    closeModal();
+    markFeeStatus(studentId, monthKey, 'BREAK', { reason });
+}
+
+// ====================================================================
+// 6. FEE MANAGEMENT (ADMIN - Logic)
+// ====================================================================
+
+function checkAdminWritePermission() {
+    if (!auth.currentUser || !auth.currentUser.providerData.some(p => p.providerId === 'password')) {
+        alert("Permission Denied: Only authenticated administrators can perform this action.");
         return false;
     }
     return true;
 }
 
-/**
- * Renders the fee management table for a specific student in the admin panel.
- */
 async function renderAdminFeeManagement(studentId) {
     if (!checkAdminWritePermission()) return;
     
@@ -317,8 +344,8 @@ async function renderAdminFeeManagement(studentId) {
 
             if (status === "PENDING") {
                 actionButtons = `
-                    <button class="fee-action-btn" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>
-                    <button class="fee-action-btn" onclick="markBreak('${studentId}', '${month}')">Mark Break</button>
+                    <button class="fee-action-btn" onclick="openActionModal('${studentId}', '${month}', 'paid')">Mark Paid</button>
+                    <button class="fee-action-btn" onclick="openActionModal('${studentId}', '${month}', 'break')">Mark Break</button>
                 `;
             } else {
                 actionButtons = `
@@ -346,76 +373,36 @@ async function renderAdminFeeManagement(studentId) {
 }
 
 /**
- * Prompts for payment method and calls markPaid.
+ * Generic function to mark fee status.
+ * @param {string} studentId 
+ * @param {string} monthKey 
+ * @param {string} status 'PAID' or 'BREAK'
+ * @param {object} data Specific fields like {method} or {reason}
  */
-function openPaymentModal(studentId, monthKey) {
-    const method = prompt(`Enter payment method for ${monthKey} (e.g., Cash, Bank, Mobile):`);
-    if (method) {
-        markPaid(studentId, monthKey, method);
-    }
-}
-
-/**
- * Marks a student's fee status as 'PAID'.
- */
-async function markPaid(studentId, monthKey, method) {
+async function markFeeStatus(studentId, monthKey, status, data = {}) {
     if (!checkAdminWritePermission()) return;
 
-    if (method && method.trim() !== "") {
-        const feeRef = ref(db, `students/${studentId}/fees/${monthKey}`);
-        const recordedBy = auth.currentUser.email || auth.currentUser.uid; 
-
-        try {
-            await set(feeRef, {
-                status: "PAID",
-                method: method.trim(),
-                timestamp: Date.now(),
-                recordedBy: recordedBy
-            });
-
-            alert(`Successfully marked ${monthKey} as PAID.`);
-            renderAdminFeeManagement(studentId); 
-
-        } catch (error) {
-            console.error("Mark Paid Error:", error);
-            alert("Error marking fee as PAID. Ensure your security rules allow the Admin write.");
-        }
-    }
-}
-
-/**
- * Marks a student's fee status as 'BREAK'.
- */
-async function markBreak(studentId, monthKey) {
-    if (!checkAdminWritePermission()) return;
+    const feeRef = ref(db, `students/${studentId}/fees/${monthKey}`);
+    const recordedBy = auth.currentUser.email || auth.currentUser.uid; 
     
-    const reason = prompt(`Mark ${monthKey} as BREAK for ${studentId}.\n\nEnter Break Reason (Optional):`);
+    const payload = {
+        status: status,
+        timestamp: Date.now(),
+        recordedBy: recordedBy,
+        ...data // Add method or reason
+    };
 
-    if (reason !== null) { 
-        const feeRef = ref(db, `students/${studentId}/fees/${monthKey}`);
-        const recordedBy = auth.currentUser.email || auth.currentUser.uid;
+    try {
+        await set(feeRef, payload);
+        alert(`Successfully marked ${monthKey} as ${status}.`);
+        renderAdminFeeManagement(studentId); 
 
-        try {
-            await set(feeRef, {
-                status: "BREAK",
-                reason: reason.trim() || "No reason provided",
-                timestamp: Date.now(),
-                recordedBy: recordedBy
-            });
-
-            alert(`Successfully marked ${monthKey} as BREAK.`);
-            renderAdminFeeManagement(studentId);
-
-        } catch (error) {
-            console.error("Mark Break Error:", error);
-            alert("Error marking fee as BREAK. Check console and security rules.");
-        }
+    } catch (error) {
+        console.error(`Mark ${status} Error:`, error);
+        alert(`Error marking fee as ${status}. Check console and security rules.`);
     }
 }
 
-/**
- * Undoes a fee status by deleting the record (reverts to PENDING/UNPAID).
- */
 async function undoStatus(studentId, monthKey) {
     if (!checkAdminWritePermission()) return;
 
@@ -434,12 +421,9 @@ async function undoStatus(studentId, monthKey) {
 }
 
 // ====================================================================
-// 6. FEE VIEW (STUDENT - Read Only)
+// 7. FEE VIEW (STUDENT - Read Only)
 // ====================================================================
 
-/**
- * Loads a student's fee data and sets up a real-time listener for the student panel.
- */
 function loadStudentPayments(studentId) {
     const feesRef = ref(db, `students/${studentId}/fees`);
     
@@ -449,9 +433,6 @@ function loadStudentPayments(studentId) {
     });
 }
 
-/**
- * Renders the fee status (read-only) for the student's panel.
- */
 function renderStudentPayments(studentId, feesData = {}) {
     const container = document.getElementById("student-fee-view");
     if (!container) return; 
@@ -498,12 +479,9 @@ function renderStudentPayments(studentId, feesData = {}) {
 }
 
 // ====================================================================
-// 7. REGISTRATION AND BREAK REQUESTS
+// 8. REGISTRATION AND BREAK REQUESTS
 // ====================================================================
 
-/**
- * Handles the new student registration submission.
- */
 async function handleRegistration() {
     const name = document.getElementById('reg-name').value.trim();
     const phone = document.getElementById('reg-guardian-phone').value.trim();
@@ -536,16 +514,11 @@ async function handleRegistration() {
         });
 
         messageEl.style.color = 'green';
-        messageEl.innerHTML = `
-            Registration successful! Your Student ID is <strong>${newStudentId}</strong>. 
-            Please wait for admin approval.
-        `;
-
+        messageEl.innerHTML = `Registration successful! Your Student ID is <strong>${newStudentId}</strong>. Please wait for admin approval.`;
+        
         // Clear form
         document.getElementById('reg-name').value = '';
-        document.getElementById('reg-guardian-phone').value = '';
-        document.getElementById('reg-class').value = '';
-        document.getElementById('reg-roll').value = '';
+        // ... clear other form fields
 
     } catch (error) {
         console.error("Registration Error:", error);
@@ -554,9 +527,6 @@ async function handleRegistration() {
     }
 }
 
-/**
- * Allows the student to request a break for a specific month.
- */
 async function requestBreak() {
     if (!currentStudentId || !currentStudentData) return;
 

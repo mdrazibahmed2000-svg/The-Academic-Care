@@ -8,81 +8,92 @@
 </head>
 <body>
 
+<!-- LOGIN PAGE -->
 <div class="container" id="loginContainer">
-    <h1>The Academic Care</h1>
-    <input type="text" id="userID" placeholder="Enter Student ID or 'admin'">
-    
-    <!-- Admin login fields -->
-    <div id="adminLoginFields" class="hidden">
-        <input type="email" id="adminEmail" placeholder="Admin Email">
-        <input type="password" id="adminPassword" placeholder="Admin Password">
-    </div>
-    
-    <button id="loginBtn">Login</button>
-    <button id="applyBtn">Apply for Registration</button>
-    <div id="message"></div>
+  <h1>The Academic Care</h1>
+  <input type="text" id="userID" placeholder="Enter Student ID or 'admin'">
+
+  <!-- Admin login fields -->
+  <div id="adminLoginFields" class="hidden">
+    <input type="email" id="adminEmail" placeholder="Admin Email">
+    <input type="password" id="adminPassword" placeholder="Admin Password">
+  </div>
+
+  <button id="loginBtn">Login</button>
+  <button id="applyBtn">Apply for Registration</button>
+  <div id="message"></div>
 </div>
 
-<!-- Registration -->
+<!-- STUDENT REGISTRATION -->
 <div class="container hidden" id="registrationContainer">
-    <h2>Student Registration</h2>
-    <form id="registrationForm">
-        <input type="text" id="name" placeholder="Student Name" required>
-        <input type="text" id="class" placeholder="Class" required>
-        <input type="text" id="roll" placeholder="Roll" required>
-        <input type="text" id="guardian" placeholder="Guardian Number" required>
-        <button type="submit">Submit Registration</button>
-    </form>
-    <button id="backToLogin">Back to Login</button>
-    <div id="studentIDDisplay"></div>
+  <h2>Student Registration</h2>
+  <form id="registrationForm">
+    <input type="text" id="name" placeholder="Student Name" required>
+    <input type="text" id="class" placeholder="Class (6-10)" required>
+    <input type="text" id="roll" placeholder="Roll" required>
+    <input type="text" id="guardian" placeholder="Guardian Number" required>
+    <button type="submit">Submit Registration</button>
+  </form>
+  <button id="backToLogin">Back to Login</button>
+  <div id="studentIDDisplay"></div>
 </div>
 
-<!-- Student Panel -->
+<!-- STUDENT PANEL -->
 <div class="container hidden" id="studentPanel">
-    <h1>The Academic Care</h1>
-    <p>Academic Year: 2025</p>
-    <button id="profileBtn">My Profile</button>
-    <button id="tuitionBtn">Tuition Fee Status</button>
-    <button id="breakBtn">Request Break</button>
+  <h1>The Academic Care</h1>
+  <p>Academic Year: 2025</p>
+  <button id="profileBtn">My Profile</button>
+  <button id="tuitionBtn">Tuition Fee Status</button>
+  <button id="breakBtn">Request Break</button>
 
-    <div id="profile" class="hidden"></div>
-    <div id="tuition" class="hidden">
-        <table id="tuitionTable"></table>
-    </div>
-    <div id="break" class="hidden">
-        <input type="number" id="breakMonths" placeholder="Number of months">
-        <button id="requestBreakBtn">Request Break</button>
-        <div id="breakMessage"></div>
-    </div>
+  <div id="profile" class="hidden"></div>
+  <div id="tuition" class="hidden">
+    <table id="tuitionTable">
+      <thead>
+        <tr><th>Month</th><th>Status</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div id="break" class="hidden">
+    <input type="number" id="breakMonths" placeholder="Number of months">
+    <button id="requestBreakBtn">Request Break</button>
+    <div id="breakMessage"></div>
+  </div>
 </div>
 
-<!-- Admin Panel -->
+<!-- ADMIN PANEL -->
 <div class="container hidden" id="adminPanel">
-    <h1>Admin Panel</h1>
-    <div class="tabs">
-        <button class="tabBtn active" data-tab="pending">Pending Students</button>
-        <button class="tabBtn" data-tab="class07">Class 07</button>
-        <button class="tabBtn" data-tab="class08">Class 08</button>
-        <button class="tabBtn" data-tab="class09">Class 09</button>
-    </div>
+  <h1>Admin Panel</h1>
 
-    <div id="pending" class="tabContent">
-        <h3>Pending Students</h3>
-        <ul id="pendingStudents"></ul>
-    </div>
+  <div class="tabs">
+    <button class="tabBtn active" data-tab="pending">Pending Students</button>
+    <button class="tabBtn" data-tab="class06">Class 06</button>
+    <button class="tabBtn" data-tab="class07">Class 07</button>
+    <button class="tabBtn" data-tab="class08">Class 08</button>
+    <button class="tabBtn" data-tab="class09">Class 09</button>
+    <button class="tabBtn" data-tab="class10">Class 10</button>
+  </div>
 
-    <div id="class07" class="tabContent hidden"><ul id="class07Students"></ul></div>
-    <div id="class08" class="tabContent hidden"><ul id="class08Students"></ul></div>
-    <div id="class09" class="tabContent hidden"><ul id="class09Students"></ul></div>
+  <div id="pending" class="tabContent">
+    <h3>Pending Students</h3>
+    <ul id="pendingStudents"></ul>
+  </div>
 
-    <div id="studentDetail" class="tabContent hidden">
-        <h3>Student Details</h3>
-        <div id="studentInfo"></div>
-        <table>
-            <thead><tr><th>Month</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="studentTuitionTable"></tbody>
-        </table>
-    </div>
+  <div id="class06" class="tabContent hidden"><ul id="class06Students"></ul></div>
+  <div id="class07" class="tabContent hidden"><ul id="class07Students"></ul></div>
+  <div id="class08" class="tabContent hidden"><ul id="class08Students"></ul></div>
+  <div id="class09" class="tabContent hidden"><ul id="class09Students"></ul></div>
+  <div id="class10" class="tabContent hidden"><ul id="class10Students"></ul></div>
+
+  <div id="studentDetail" class="tabContent hidden">
+    <h3>Student Details</h3>
+    <div id="studentInfo"></div>
+    <table>
+      <thead><tr><th>Month</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="studentTuitionTable"></tbody>
+    </table>
+  </div>
 </div>
 
 <script type="module" src="script.js"></script>

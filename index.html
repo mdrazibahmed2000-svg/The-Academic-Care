@@ -3,125 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Academic Care Portal</title>
+    <title>The Academic Care </title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#4CAF50',
+                        'primary-dark': '#45a049',
+                        'danger': '#f44336',
+                        'warning': '#ff9800',
+                        'light-bg': '#f7f7f7',
+                        'card-bg': '#fff',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f7f7f7;
+        /* Custom styles for status badges and transitions */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
         }
-
-        .container {
-            max-width: 500px;
-            margin: 30px auto;
-            padding: 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        h1, h2, h3 { text-align: center; color: #333; }
-        input, button, select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            box-sizing: border-box;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover { background-color: #45a049; }
-
-        .hidden { display: none; }
-        #message { text-align: center; color: red; margin-top: 10px; }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
-        .paid { 
-            background-color: #4CAF50; /* Green background */
-            color: white; 
-            padding: 5px; 
-            border-radius: 5px; 
-        }
-        .unpaid { 
-            background-color: #f44336; /* Red background */
-            color: white; 
-            padding: 5px; 
-            border-radius: 5px; 
-        }
-        /* Status classes for non-table sections */
-        .status-paid { color: #4CAF50; font-weight: bold; }
-        .status-unpaid { color: #f44336; font-weight: bold; }
-        .break { background-color: #ff9800; color: white; padding: 5px; border-radius: 5px; }
-
-
-        /* Tabs */
-        .tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
-        .tabBtn {
-            background-color: #eee;
-            border: none;
-            padding: 10px 15px;
-            margin: 2px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .tabBtn.active { background-color: #4CAF50; color: white; }
-        .tabContent { margin-top: 20px; }
-        .tabContent.hidden { display: none; }
-
-        /* Lists */
-        ul { list-style-type: none; padding: 0; }
-        ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; cursor: pointer; border-radius: 5px; }
-        ul li button { margin-left: 10px; padding: 5px 10px; }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .container { width: 90%; padding: 15px; }
-            .tabs { flex-direction: column; }
-            .tabBtn { width: 100%; margin-bottom: 5px; }
-        }
+        .paid-badge { background-color: #4CAF50; color: white; }
+        .unpaid-badge { background-color: #f44336; color: white; }
+        .break-badge { background-color: #ff9800; color: white; }
+        .approved-badge { background-color: #2196F3; color: white; }
+        .pending-badge { background-color: #ffc107; color: #333; }
+        .rejected-badge { background-color: #9e9e9e; color: white; }
+        .tab-content { transition: opacity 0.3s ease-in-out; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>The Academic Care</h1>
+<body class="bg-light-bg font-sans min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-lg mx-auto p-6 bg-card-bg rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">The Academic Care Portal</h1>
 
+        <!-- Loading & Message Area -->
+        <div id="loading" class="text-center text-primary-dark font-medium hidden">Loading...</div>
+        <div id="message" class="text-center text-danger font-medium mt-4"></div>
+        <div id="user-id-display" class="text-xs text-gray-500 text-center mb-4"></div>
+
+        <!-- 1. Login Container (Initial View) -->
         <div id="loginContainer">
-            <input type="text" id="userID" placeholder="Student ID or 'admin'">
+            <input type="text" id="userID" placeholder="Student ID or 'admin'"
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary mb-3">
             
             <div id="adminLoginFields" class="hidden">
-                <input type="email" id="adminEmail" placeholder="Admin Email">
-                <input type="password" id="adminPassword" placeholder="Admin Password">
+                <input type="email" id="adminEmail" placeholder="Admin Email (admin@example.com)"
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary mb-3">
+                <input type="password" id="adminPassword" placeholder="Admin Password (password)"
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary mb-3">
             </div>
 
-            <button id="loginBtn">Login</button>
-            <button id="applyBtn">Apply for Registration</button>
-            <div id="message" style="color: red; margin-top: 10px;"></div>
+            <!-- Login Button -->
+            <button id="loginBtn" class="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-200 shadow-md mb-2">Login</button>
+            
+            <!-- Registration Button -->
+            <button id="applyBtn" class="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-200 shadow-md">Apply for Registration</button>
         </div>
 
+        <!-- 2. Registration Container -->
         <div id="registrationContainer" class="hidden">
-            <h2>New Student Registration</h2>
-            <form id="registrationForm">
-                <input type="text" id="name" placeholder="Full Name" required>
-                <select id="class" required>
+            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">New Student Registration</h2>
+            <form id="registrationForm" class="space-y-3">
+                <input type="text" id="name" placeholder="Full Name" required
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                <select id="class" required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
                     <option value="" disabled selected>Select Class (6-10)</option>
                     <option value="06">Class 06</option>
                     <option value="07">Class 07</option>
@@ -129,98 +86,1001 @@
                     <option value="09">Class 09</option>
                     <option value="10">Class 10</option>
                 </select>
-                <input type="text" id="roll" placeholder="Roll Number (e.g., 001)" maxlength="3" required>
-                <input type="tel" id="guardian" placeholder="Guardian Phone Number" required>
-                <button type="submit">Submit Registration</button>
-                <p id="studentIDDisplay" style="margin-top: 15px; color: #333;"></p>
-                <button type="button" id="backToLogin">Back to Login</button>
+                <input type="text" id="roll" placeholder="Roll Number (e.g., 001)" maxlength="3" required
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                <input type="tel" id="guardian" placeholder="Guardian Phone Number" required
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                
+                <button type="submit" class="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-200 shadow-md">Submit Registration</button>
+                <p id="studentIDDisplay" class="mt-4 text-sm text-center text-gray-600 font-medium"></p>
+                <button type="button" id="backToLogin" class="w-full py-3 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600 transition duration-200 shadow-md">Back to Login</button>
             </form>
         </div>
 
+        <!-- 3. Student Panel -->
         <div id="studentPanel" class="hidden">
-            <h2>Student Portal</h2>
-            <div class="tabs">
-                <button class="tabBtn active" data-tab="profile" id="profileBtn">My Profile</button>
-                <button class="tabBtn" data-tab="tuition" id="tuitionBtn">Tuition Fee Status</button>
-                <button class="tabBtn" data-tab="break" id="breakBtn">Request Break</button>
+            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">Student Portal</h2>
+            <div class="flex flex-wrap justify-center mb-4 space-x-2">
+                <button class="tabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition active" data-tab="profile" id="profileBtn">My Profile</button>
+                <button class="tabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="tuition" id="tuitionBtn">Tuition Fee Status</button>
+                <button class="tabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="break" id="breakBtn">Request Break</button>
             </div>
 
-            <div id="profile" class="tabContent">
-                <h3>Profile Details</h3>
-            </div>
-
-            <div id="tuition" class="tabContent hidden">
-                <h3>Monthly Fee Status</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Month</th>
-                            <th>Status</th>
-                            <th>Payment Date</th> </tr>
-                    </thead>
-                    <tbody id="tuitionTable">
-                        </tbody>
-                </table>
-            </div>
-
-            <div id="break" class="tabContent hidden">
-                <h3>Request Break</h3>
-                
-                <div id="breakFormContent">
-                    <label for="breakStartMonth" style="display: block; text-align: left; margin-top: 10px;">Select break start month:</label>
-                    <select id="breakStartMonth" required></select>
-                    
-                    <label for="breakDuration" style="display: block; text-align: left; margin-top: 10px;">Select duration (in months):</label>
-                    <select id="breakDuration" required></select>
-                    
-                    <button id="requestBreakBtn">Request Break</button>
-                    <p id="breakMessage" style="margin-top: 10px; color: #333;"></p>
+            <div id="profile" class="tab-content border p-4 rounded-lg bg-gray-50">
+                <h3 class="text-xl font-semibold mb-3">Profile Details</h3>
+                <div id="profileDetails" class="space-y-2 text-gray-700">
+                    <!-- Profile details will be injected here -->
                 </div>
             </div>
-            <button id="studentLogoutBtn" style="margin-top: 20px;">Logout</button>
+
+            <div id="tuition" class="tab-content border p-4 rounded-lg bg-gray-50 hidden">
+                <h3 class="text-xl font-semibold mb-3">Monthly Fee Status</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white rounded-lg shadow-sm">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">Month</th>
+                                <th class="py-3 px-6 text-center">Status</th>
+                                <th class="py-3 px-6 text-center">Payment Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tuitionTable" class="text-gray-600 text-sm font-light">
+                            <!-- Tuition data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="break" class="tab-content border p-4 rounded-lg bg-gray-50 hidden">
+                <h3 class="text-xl font-semibold mb-3">Request Academic Break</h3>
+                <div id="breakFormContent" class="space-y-3">
+                    <label for="breakStartMonth" class="block text-sm font-medium text-gray-700">Select break start month:</label>
+                    <select id="breakStartMonth" required
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"></select>
+                    
+                    <label for="breakDuration" class="block text-sm font-medium text-gray-700">Select duration (in months):</label>
+                    <select id="breakDuration" required
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"></select>
+                    
+                    <button id="requestBreakBtn" class="w-full py-3 bg-warning text-white font-bold rounded-lg hover:bg-orange-600 transition duration-200 shadow-md">Request Break</button>
+                    <p id="breakMessage" class="mt-2 text-sm text-gray-700"></p>
+
+                    <h4 class="text-lg font-semibold pt-4">My Break Requests</h4>
+                    <ul id="breakRequestsList" class="space-y-2">
+                        <!-- Break requests will be listed here -->
+                    </ul>
+                </div>
+            </div>
+
+            <button id="studentLogoutBtn" class="w-full py-3 bg-gray-700 text-white font-bold rounded-lg hover:bg-black transition duration-200 shadow-md mt-6">Logout</button>
         </div>
 
+        <!-- 4. Admin Panel -->
         <div id="adminPanel" class="hidden">
-            <h2>Admin Panel</h2>
-            <button id="adminLogoutBtn">Logout</button>
+            <h2 class="text-2xl font-semibold text-center text-gray-700 mb-4">Admin Panel</h2>
+            <button id="adminLogoutBtn" class="w-full py-3 bg-gray-700 text-white font-bold rounded-lg hover:bg-black transition duration-200 shadow-md mb-4">Logout</button>
 
-            <div class="tabs" style="margin-top: 20px;">
-                <button class="tabBtn active" data-tab="pending">Pending Students</button>
-                <button class="tabBtn" data-tab="class06">Class 06</button>
-                <button class="tabBtn" data-tab="class07">Class 07</button>
-                <button class="tabBtn" data-tab="class08">Class 08</button>
-                <button class="tabBtn" data-tab="class09">Class 09</button>
-                <button class="tabBtn" data-tab="class10">Class 10</button>
-                <button class="tabBtn" data-tab="studentDetail" style="display: none;">Student Detail</button>
+            <div class="flex flex-wrap justify-center mb-4 space-x-2">
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition active" data-tab="pending" id="adminPendingBtn">Pending Students</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="class06">C-06</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="class07">C-07</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="class08">C-08</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="class09">C-09</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition" data-tab="class10">C-10</button>
+                <button class="adminTabBtn py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-primary-dark hover:text-white transition hidden" data-tab="studentDetail" id="studentDetailBtn">Student Detail</button>
             </div>
 
-            <div id="pending" class="tabContent">
-                <h3>Pending Students</h3>
-                <ul id="pendingStudents">
+            <!-- Admin Tab Contents -->
+            <div id="adminTabContents" class="space-y-4">
+                <div id="pending" class="tab-content border p-4 rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold mb-3">Pending Students for Approval</h3>
+                    <ul id="pendingStudents" class="space-y-2"></ul>
+                </div>
+
+                <div id="class06" class="tab-content border p-4 rounded-lg bg-gray-50 hidden"><h3>Class 06 Students</h3><ul id="class06Students" class="space-y-2"></ul></div>
+                <div id="class07" class="tab-content border p-4 rounded-lg bg-gray-50 hidden"><h3>Class 07 Students</h3><ul id="class07Students" class="space-y-2"></ul></div>
+                <div id="class08" class="tab-content border p-4 rounded-lg bg-gray-50 hidden"><h3>Class 08 Students</h3><ul id="class08Students" class="space-y-2"></ul></div>
+                <div id="class09" class="tab-content border p-4 rounded-lg bg-gray-50 hidden"><h3>Class 09 Students</h3><ul id="class09Students" class="space-y-2"></ul></div>
+                <div id="class10" class="tab-content border p-4 rounded-lg bg-gray-50 hidden"><h3>Class 10 Students</h3><ul id="class10Students" class="space-y-2"></ul></div>
+                
+                <div id="studentDetail" class="tab-content border p-4 rounded-lg bg-gray-50 hidden">
+                    <div id="studentInfo" class="mb-4 p-3 border border-gray-200 rounded-lg bg-white"></div>
+                    <h4 class="text-xl font-semibold mb-3 pt-2">Tuition Management</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg shadow-sm">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-6 text-left">Month</th>
+                                    <th class="py-3 px-6 text-center">Status</th>
+                                    <th class="py-3 px-6 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentTuitionTable" class="text-gray-600 text-sm font-light">
+                                <!-- Admin Tuition Management rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 class="text-xl font-semibold mb-3 pt-6">Break Requests Management</h4>
+                    <ul id="adminBreakRequestsList" class="space-y-2">
+                        <!-- Admin Break Requests list injected here -->
                     </ul>
-            </div>
-
-            <div id="class06" class="tabContent hidden"><h3>Class 06 Students</h3><ul id="class06Students"></ul></div>
-            <div id="class07" class="tabContent hidden"><h3>Class 07 Students</h3><ul id="class07Students"></ul></div>
-            <div id="class08" class="tabContent hidden"><h3>Class 08 Students</h3><ul id="class08Students"></ul></div>
-            <div id="class09" class="tabContent hidden"><h3>Class 09 Students</h3><ul id="class09Students"></ul></div>
-            <div id="class10" class="tabContent hidden"><h3>Class 10 Students</h3><ul id="class10Students"></ul></div>
-            
-            <div id="studentDetail" class="tabContent hidden">
-                <h3>Student Detail</h3>
-                <div id="studentInfo"></div>
-                <h4>Tuition Management</h4>
-                <table>
-                    <thead>
-                        <tr><th>Month</th><th>Status</th><th>Action</th></tr>
-                    </thead>
-                    <tbody id="studentTuitionTable">
-                        </tbody>
-                </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <!-- Firebase and Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDoc, updateDoc, setLogLevel, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL CONSTANTS & SETUP ---
+        const ADMIN_EMAIL = 'admin@example.com';
+        const ADMIN_PASSWORD = 'password';
+        const APP_COLLECTION_PATH = (appId) => `/artifacts/${appId}/public/data`;
+        const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        // Firebase global variables
+        let app, db, auth;
+        let currentUserId = null;
+        let currentStudentId = null;
+        let userRole = null; // 'admin' or 'student'
+        let currentStudentProfile = null; // Used for the student panel
+
+        // Canvas provided globals
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // --- DOM Elements ---
+        const $ = (id) => document.getElementById(id);
+        
+        const loadingEl = $('loading');
+        const messageEl = $('message');
+        const userIdDisplayEl = $('user-id-display');
+        const loginContainerEl = $('loginContainer');
+        const registrationContainerEl = $('registrationContainer');
+        const studentPanelEl = $('studentPanel');
+        const adminPanelEl = $('adminPanel');
+        const adminLoginFieldsEl = $('adminLoginFields');
+        const userIDEl = $('userID');
+        const adminEmailEl = $('adminEmail');
+        const adminPasswordEl = $('adminPassword');
+
+        // --- UTILITY FUNCTIONS ---
+
+        function showMessage(text, isError = true) {
+            messageEl.textContent = text;
+            messageEl.className = `text-center font-medium mt-4 ${isError ? 'text-danger' : 'text-primary-dark'}`;
+        }
+
+        function toggleLoading(show) {
+            loadingEl.classList.toggle('hidden', !show);
+        }
+
+        function hideAllPanels() {
+            loginContainerEl.classList.add('hidden');
+            registrationContainerEl.classList.add('hidden');
+            studentPanelEl.classList.add('hidden');
+            adminPanelEl.classList.add('hidden');
+            messageEl.textContent = '';
+        }
+
+        function switchTab(containerId, tabName) {
+            const container = $(containerId);
+            if (!container) return;
+
+            // Hide all tab content
+            container.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Deactivate all buttons
+            container.querySelectorAll('.tabBtn, .adminTabBtn').forEach(btn => {
+                btn.classList.remove('active', 'bg-primary-dark', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+
+            // Show selected tab content
+            const selectedContent = $(tabName);
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+            }
+
+            // Activate selected button
+            const selectedBtn = container.querySelector(`[data-tab="${tabName}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active', 'bg-primary-dark', 'text-white');
+                selectedBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                if (tabName === 'studentDetail') {
+                    selectedBtn.classList.remove('hidden');
+                } else {
+                    $('studentDetailBtn').classList.add('hidden');
+                }
+            }
+        }
+
+        function generateStudentID(classValue, rollValue) {
+            // Format: CCRR - Class (2 digits) + Roll (3 digits)
+            return `${classValue}${rollValue.padStart(3, '0')}`;
+        }
+
+        function getMonthYear(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${year}-${month}`;
+        }
+        
+        // --- FIREBASE INITIALIZATION & AUTHENTICATION ---
+        
+        // Removed the separate setupAuthListener function and moved the logic into initializeFirebase
+
+        async function initializeFirebase() {
+            try {
+                // setLogLevel('debug'); // Uncomment for debugging
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // --- 1. Initial Authentication Check and Setup ---
+                await new Promise((resolve) => {
+                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                        if (user) {
+                            currentUserId = user.uid;
+                            userIdDisplayEl.textContent = `Current User ID: ${currentUserId}`;
+                        } else {
+                            currentUserId = null;
+                            // Sign in anonymously if no token is provided
+                            if (!initialAuthToken) {
+                                await signInAnonymously(auth);
+                            }
+                        }
+                        unsubscribe();
+                        resolve();
+                    });
+                });
+
+                // Sign in with Custom Token if provided
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                }
+                
+                // --- 2. Long-term Auth Listener (FIX: Now 'auth' is defined) ---
+                onAuthStateChanged(auth, (user) => {
+                    currentUserId = user ? user.uid : null;
+                    userIdDisplayEl.textContent = `Current User ID: ${currentUserId || 'N/A'}`;
+                });
+
+
+                // --- 3. Panel State Check on Reload ---
+                if (localStorage.getItem('userRole') === 'admin') {
+                    userRole = 'admin';
+                    hideAllPanels();
+                    showAdminPanel();
+                } else if (localStorage.getItem('userRole') === 'student' && localStorage.getItem('currentStudentId')) {
+                    const storedStudentId = localStorage.getItem('currentStudentId');
+                    const studentDocRef = doc(db, APP_COLLECTION_PATH(appId), 'students', storedStudentId);
+                    const docSnap = await getDoc(studentDocRef);
+                    
+                    if (docSnap.exists() && docSnap.data().status === 'approved') {
+                        currentStudentId = storedStudentId;
+                        userRole = 'student';
+                        hideAllPanels();
+                        showStudentPanel(docSnap.data());
+                    } else {
+                        // Clear stored data if student is no longer approved/exists
+                        localStorage.removeItem('userRole');
+                        localStorage.removeItem('currentStudentId');
+                        hideAllPanels();
+                        loginContainerEl.classList.remove('hidden');
+                    }
+                } else {
+                    hideAllPanels();
+                    loginContainerEl.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                showMessage("Failed to initialize the application. Check console for details.", true);
+            }
+        }
+
+        // function setupAuthListener() {
+        //     onAuthStateChanged(auth, (user) => {
+        //         currentUserId = user ? user.uid : null;
+        //         userIdDisplayEl.textContent = `Current User ID: ${currentUserId || 'N/A'}`;
+        //     });
+        // }
+        
+        // --- LOGIN & LOGOUT HANDLERS ---
+
+        userIDEl.addEventListener('input', () => {
+            if (userIDEl.value.toLowerCase() === 'admin') {
+                adminLoginFieldsEl.classList.remove('hidden');
+                // Change Login button color for admin
+                $('loginBtn').classList.remove('bg-primary', 'hover:bg-primary-dark');
+                $('loginBtn').classList.add('bg-blue-600', 'hover:bg-blue-700');
+            } else {
+                adminLoginFieldsEl.classList.add('hidden');
+                // Revert Login button color for student
+                $('loginBtn').classList.add('bg-primary', 'hover:bg-primary-dark');
+                $('loginBtn').classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            }
+        });
+
+        $('loginBtn').addEventListener('click', async () => {
+            const userIdInput = userIDEl.value.trim();
+            if (!userIdInput) {
+                showMessage('Please enter a Student ID or "admin".');
+                return;
+            }
+
+            toggleLoading(true);
+            showMessage('');
+            
+            try {
+                if (userIdInput.toLowerCase() === 'admin') {
+                    const email = adminEmailEl.value.trim();
+                    const password = adminPasswordEl.value.trim();
+
+                    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+                        showMessage('Invalid Admin Credentials (Hint: admin@example.com / password)', true);
+                        toggleLoading(false);
+                        return;
+                    }
+
+                    // Mock Admin Login (Since we cannot create a new user dynamically in this environment)
+                    userRole = 'admin';
+                    localStorage.setItem('userRole', 'admin');
+                    hideAllPanels();
+                    showAdminPanel();
+                    showMessage('Admin Login Successful', false);
+
+                } else {
+                    // Student Login
+                    const studentId = userIdInput;
+                    const studentDocRef = doc(db, APP_COLLECTION_PATH(appId), 'students', studentId);
+                    const docSnap = await getDoc(studentDocRef);
+
+                    if (docSnap.exists()) {
+                        const studentData = docSnap.data();
+                        if (studentData.status === 'approved') {
+                            currentStudentId = studentId;
+                            userRole = 'student';
+                            localStorage.setItem('userRole', 'student');
+                            localStorage.setItem('currentStudentId', studentId);
+                            hideAllPanels();
+                            await showStudentPanel(studentData);
+                            showMessage('Student Login Successful', false);
+                        } else {
+                            showMessage(`Login pending. Your registration status is: ${studentData.status}.`);
+                        }
+                    } else {
+                        showMessage('Student ID not found. Please apply for registration.');
+                    }
+                }
+            } catch (error) {
+                console.error("Login Error:", error);
+                showMessage('An error occurred during login. Please try again.', true);
+            } finally {
+                toggleLoading(false);
+            }
+        });
+
+        function handleLogout() {
+            signOut(auth).catch(e => console.error("Signout error:", e));
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('currentStudentId');
+            currentStudentId = null;
+            userRole = null;
+            currentStudentProfile = null;
+            hideAllPanels();
+            loginContainerEl.classList.remove('hidden');
+            userIDEl.value = '';
+            adminEmailEl.value = '';
+            adminPasswordEl.value = '';
+            showMessage('You have been logged out.', false);
+        }
+
+        $('studentLogoutBtn').addEventListener('click', handleLogout);
+        $('adminLogoutBtn').addEventListener('click', handleLogout);
+
+        // --- REGISTRATION HANDLERS ---
+        
+        $('applyBtn').addEventListener('click', () => {
+            hideAllPanels();
+            registrationContainerEl.classList.remove('hidden');
+            $('studentIDDisplay').textContent = ''; // Clear previous ID display
+            $('registrationForm').reset();
+        });
+
+        $('backToLogin').addEventListener('click', () => {
+            hideAllPanels();
+            loginContainerEl.classList.remove('hidden');
+        });
+
+        $('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = $('name').value.trim();
+            const classValue = $('class').value;
+            const roll = $('roll').value.trim();
+            const guardian = $('guardian').value.trim();
+
+            if (!name || !classValue || !roll || !guardian) return;
+            
+            const studentId = generateStudentID(classValue, roll);
+            const studentDocRef = doc(db, APP_COLLECTION_PATH(appId), 'students', studentId);
+            
+            toggleLoading(true);
+            showMessage('');
+
+            try {
+                // Check if ID already exists
+                const docSnap = await getDoc(studentDocRef);
+                if (docSnap.exists()) {
+                    showMessage(`Registration failed: Student ID ${studentId} already exists.`, true);
+                    return;
+                }
+
+                const newStudent = {
+                    id: studentId,
+                    name: name,
+                    class: classValue,
+                    roll: roll,
+                    guardian: guardian,
+                    status: 'pending',
+                    registeredAt: new Date().toISOString(),
+                    userId: currentUserId || 'anonymous', // Track who registered it
+                };
+
+                await setDoc(studentDocRef, newStudent);
+
+                // Initialize Tuition Fee Status (All months unpaid for current year + next 12 months for demonstration)
+                const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', studentId);
+                const feeData = {};
+                const now = new Date();
+                
+                // Initialize 12 months starting from the current month
+                for (let i = 0; i < 12; i++) { 
+                    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                    const monthYear = getMonthYear(d);
+                    feeData[monthYear] = { status: 'unpaid', date: null };
+                }
+
+                await setDoc(tuitionDocRef, feeData, { merge: true });
+
+                $('studentIDDisplay').textContent = `Your ID is: ${studentId}. Please save it. Awaiting admin approval.`;
+                showMessage('Registration submitted successfully. Please wait for approval.', false);
+                $('registrationForm').reset();
+
+            } catch (error) {
+                console.error("Registration Error:", error);
+                showMessage('Failed to submit registration. Check console for details.', true);
+            } finally {
+                toggleLoading(false);
+            }
+        });
+
+        // --- STUDENT PANEL LOGIC ---
+
+        function setupStudentPanelListeners() {
+            studentPanelEl.querySelectorAll('.tabBtn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tab = e.currentTarget.getAttribute('data-tab');
+                    switchTab('studentPanel', tab);
+                });
+            });
+
+            // Populate Break Duration Select
+            const breakDurationEl = $('breakDuration');
+            breakDurationEl.innerHTML = '<option value="" disabled selected>Select duration</option>';
+            for (let i = 1; i <= 6; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i} month${i > 1 ? 's' : ''}`;
+                breakDurationEl.appendChild(option);
+            }
+
+            $('requestBreakBtn').addEventListener('click', handleBreakRequest);
+        }
+
+        async function showStudentPanel(studentData) {
+            currentStudentProfile = studentData;
+            studentPanelEl.classList.remove('hidden');
+            switchTab('studentPanel', 'profile');
+            
+            renderStudentProfile();
+            setupStudentPanelListeners();
+            await loadStudentTuition();
+            await loadStudentBreakRequests();
+        }
+
+        function renderStudentProfile() {
+            const profileDetailsEl = $('profileDetails');
+            profileDetailsEl.innerHTML = `
+                <p><strong>Student ID:</strong> ${currentStudentProfile.id}</p>
+                <p><strong>Name:</strong> ${currentStudentProfile.name}</p>
+                <p><strong>Class:</strong> ${currentStudentProfile.class}</p>
+                <p><strong>Roll No:</strong> ${currentStudentProfile.roll}</p>
+                <p><strong>Guardian Phone:</strong> ${currentStudentProfile.guardian}</p>
+                <p><strong>Status:</strong> <span class="badge ${currentStudentProfile.status}-badge">${currentStudentProfile.status.toUpperCase()}</span></p>
+            `;
+        }
+
+        async function loadStudentTuition() {
+            const tuitionTableBody = $('tuitionTable');
+            tuitionTableBody.innerHTML = '';
+            
+            if (!currentStudentId) return;
+
+            const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', currentStudentId);
+
+            onSnapshot(tuitionDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const feeData = docSnap.data();
+                    const months = Object.keys(feeData).sort((a, b) => a.localeCompare(b)).reverse(); // Show newest first
+                    
+                    tuitionTableBody.innerHTML = '';
+                    
+                    months.forEach(monthYear => {
+                        const fee = feeData[monthYear];
+                        const dateObj = new Date(monthYear);
+                        const monthName = MONTHS[dateObj.getMonth()];
+                        const year = dateObj.getFullYear();
+                        
+                        const statusClass = fee.status === 'paid' ? 'paid-badge' : fee.status === 'unpaid' ? 'unpaid-badge' : 'break-badge';
+                        const paymentDate = fee.date ? new Date(fee.date).toLocaleDateString() : 'N/A';
+
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-100';
+                        row.innerHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap">${monthName} ${year}</td>
+                            <td class="py-3 px-6 text-center"><span class="badge ${statusClass}">${fee.status.toUpperCase()}</span></td>
+                            <td class="py-3 px-6 text-center">${paymentDate}</td>
+                        `;
+                        tuitionTableBody.appendChild(row);
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching student tuition:", error);
+                showMessage('Could not load tuition data.', true);
+            });
+            
+            // Populate Break Start Month Select
+            const breakStartMonthEl = $('breakStartMonth');
+            breakStartMonthEl.innerHTML = '<option value="" disabled selected>Select start month</option>';
+            const now = new Date();
+            for (let i = 0; i < 6; i++) { // Next 6 months
+                const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                const monthYear = getMonthYear(d);
+                const monthName = MONTHS[d.getMonth()];
+                const year = d.getFullYear();
+                
+                const option = document.createElement('option');
+                option.value = monthYear;
+                option.textContent = `${monthName} ${year}`;
+                breakStartMonthEl.appendChild(option);
+            }
+        }
+
+        async function handleBreakRequest() {
+            const startMonth = $('breakStartMonth').value;
+            const duration = parseInt($('breakDuration').value);
+            const breakMessageEl = $('breakMessage');
+
+            if (!startMonth || !duration || !currentStudentId) {
+                breakMessageEl.className = 'mt-2 text-sm text-danger';
+                breakMessageEl.textContent = 'Please select a start month and duration.';
+                return;
+            }
+
+            toggleLoading(true);
+            breakMessageEl.textContent = '';
+
+            try {
+                // Find tuition document to check if start month is already paid/break
+                const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', currentStudentId);
+                const tuitionSnap = await getDoc(tuitionDocRef);
+
+                if (tuitionSnap.exists()) {
+                    const feeData = tuitionSnap.data();
+                    // Check if any month in the break range is already paid
+                    let paidMonths = [];
+                    for (let i = 0; i < duration; i++) {
+                        const start = new Date(startMonth);
+                        const breakDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
+                        const breakMonthYear = getMonthYear(breakDate);
+                        
+                        if (feeData[breakMonthYear] && feeData[breakMonthYear].status === 'paid') {
+                            paidMonths.push(breakMonthYear);
+                        }
+                    }
+                    
+                    if (paidMonths.length > 0) {
+                        breakMessageEl.className = 'mt-2 text-sm text-danger';
+                        breakMessageEl.textContent = `Error: Cannot request break for month(s) that are already Paid. Conflict in: ${paidMonths.join(', ')}.`;
+                        return;
+                    }
+                }
+
+                const breaksCollectionRef = collection(db, APP_COLLECTION_PATH(appId), 'breaks');
+
+                // Check for existing pending/approved break request that overlaps
+                const q = query(breaksCollectionRef, where("studentId", "==", currentStudentId), where("status", "==", "pending"));
+                const existingRequests = await getDocs(q);
+
+                if (!existingRequests.empty) {
+                     breakMessageEl.className = 'mt-2 text-sm text-danger';
+                    breakMessageEl.textContent = `You have a pending break request. Please wait for the admin to approve/reject it.`;
+                    return;
+                }
+
+                const newBreakRequest = {
+                    studentId: currentStudentId,
+                    startMonth: startMonth,
+                    duration: duration,
+                    status: 'pending',
+                    requestedAt: new Date().toISOString(),
+                };
+
+                // Add document with auto-generated ID
+                await setDoc(doc(breaksCollectionRef), newBreakRequest);
+
+                breakMessageEl.className = 'mt-2 text-sm text-primary-dark';
+                breakMessageEl.textContent = `Break request for ${duration} month(s) starting from ${startMonth} submitted successfully. Awaiting admin review.`;
+                
+                $('breakStartMonth').value = '';
+                $('breakDuration').value = '';
+
+            } catch (error) {
+                console.error("Break Request Error:", error);
+                breakMessageEl.className = 'mt-2 text-sm text-danger';
+                breakMessageEl.textContent = 'Failed to submit break request.';
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function loadStudentBreakRequests() {
+            const listEl = $('breakRequestsList');
+            listEl.innerHTML = '';
+            if (!currentStudentId) return;
+
+            const breaksCollectionRef = collection(db, APP_COLLECTION_PATH(appId), 'breaks');
+            const q = query(breaksCollectionRef, where("studentId", "==", currentStudentId));
+
+            onSnapshot(q, (snapshot) => {
+                listEl.innerHTML = '';
+                if (snapshot.empty) {
+                    listEl.innerHTML = '<li class="text-gray-500">No break requests found.</li>';
+                    return;
+                }
+
+                snapshot.docs.sort((a, b) => new Date(b.data().requestedAt) - new Date(a.data().requestedAt)).forEach(doc => {
+                    const data = doc.data();
+                    const statusClass = data.status === 'approved' ? 'approved-badge' : data.status === 'rejected' ? 'rejected-badge' : 'pending-badge';
+                    
+                    const item = document.createElement('li');
+                    item.className = 'p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between items-center';
+                    item.innerHTML = `
+                        <div>
+                            <p class="font-medium">Break starting: ${data.startMonth} (${data.duration} months)</p>
+                            <p class="text-xs text-gray-500">Requested: ${new Date(data.requestedAt).toLocaleDateString()}</p>
+                        </div>
+                        <span class="badge ${statusClass}">${data.status.toUpperCase()}</span>
+                    `;
+                    listEl.appendChild(item);
+                });
+            }, (error) => {
+                console.error("Error loading break requests:", error);
+                listEl.innerHTML = '<li class="text-danger">Failed to load break requests.</li>';
+            });
+        }
+        
+        // --- ADMIN PANEL LOGIC ---
+
+        function setupAdminPanelListeners() {
+            adminPanelEl.querySelectorAll('.adminTabBtn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tab = e.currentTarget.getAttribute('data-tab');
+                    switchTab('adminPanel', tab);
+                });
+            });
+        }
+
+        function showAdminPanel() {
+            adminPanelEl.classList.remove('hidden');
+            setupAdminPanelListeners();
+            switchTab('adminPanel', 'pending');
+            
+            // Start listening to all students and breaks
+            listenToAllStudents();
+            listenToAllBreakRequests();
+        }
+
+        function listenToAllStudents() {
+            const studentsCollectionRef = collection(db, APP_COLLECTION_PATH(appId), 'students');
+            
+            onSnapshot(studentsCollectionRef, (snapshot) => {
+                const students = snapshot.docs.map(doc => doc.data());
+                
+                // Clear all lists
+                ['pending', '06', '07', '08', '09', '10'].forEach(c => $(`class${c}Students` || `pendingStudents`).innerHTML = '');
+
+                students.forEach(student => {
+                    const listItem = createStudentListItem(student, userRole);
+                    
+                    if (student.status === 'pending') {
+                        $('pendingStudents').appendChild(listItem);
+                    } else if (student.status === 'approved') {
+                        $(`class${student.class}Students`).appendChild(listItem);
+                    }
+                });
+            }, (error) => {
+                console.error("Error listening to students:", error);
+                showMessage('Admin data failed to load.', true);
+            });
+        }
+
+        function createStudentListItem(student, role) {
+            const li = document.createElement('li');
+            li.className = 'p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between items-center hover:bg-gray-100 transition cursor-pointer';
+            
+            const statusClass = student.status === 'approved' ? 'approved-badge' : 'pending-badge';
+
+            li.innerHTML = `
+                <div>
+                    <p class="font-bold text-gray-800">${student.name} (<span class="text-sm text-gray-500">${student.id}</span>)</p>
+                    <p class="text-xs text-gray-500">Class: ${student.class} | Roll: ${student.roll}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="badge ${statusClass}">${student.status.toUpperCase()}</span>
+                    ${student.status === 'pending' ? `
+                        <button class="approve-btn text-xs bg-primary text-white py-1 px-3 rounded hover:bg-primary-dark transition" data-id="${student.id}">Approve</button>
+                        <button class="reject-btn text-xs bg-danger text-white py-1 px-3 rounded hover:bg-red-600 transition" data-id="${student.id}">Reject</button>
+                    ` : ''}
+                </div>
+            `;
+            
+            li.addEventListener('click', (e) => {
+                if (!e.target.closest('button')) {
+                    viewStudentDetail(student.id);
+                }
+            });
+
+            if (student.status === 'pending') {
+                li.querySelector('.approve-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent li click
+                    handleStudentApproval(student.id, 'approved');
+                });
+                li.querySelector('.reject-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent li click
+                    handleStudentApproval(student.id, 'rejected');
+                });
+            }
+
+            return li;
+        }
+
+        async function handleStudentApproval(studentId, status) {
+            // Using a simple custom message instead of confirm()
+            if (!window.confirm(`Are you sure you want to ${status.toUpperCase()} student ${studentId}?`)) return;
+            
+            toggleLoading(true);
+            try {
+                const studentDocRef = doc(db, APP_COLLECTION_PATH(appId), 'students', studentId);
+                await updateDoc(studentDocRef, { status: status });
+                showMessage(`Student ${studentId} ${status} successfully.`, false);
+            } catch (error) {
+                console.error(`Approval Error for ${studentId}:`, error);
+                showMessage('Failed to update student status.', true);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        let activeAdminStudentId = null;
+
+        async function viewStudentDetail(studentId) {
+            activeAdminStudentId = studentId;
+            switchTab('adminPanel', 'studentDetail');
+            
+            const studentDocRef = doc(db, APP_COLLECTION_PATH(appId), 'students', studentId);
+            const studentSnap = await getDoc(studentDocRef);
+            
+            if (studentSnap.exists()) {
+                const student = studentSnap.data();
+                const studentInfoEl = $('studentInfo');
+                const statusClass = student.status === 'approved' ? 'approved-badge' : 'pending-badge';
+                studentInfoEl.innerHTML = `
+                    <h4 class="text-xl font-bold text-gray-800 mb-2">${student.name}</h4>
+                    <p class="text-sm"><strong>ID:</strong> ${student.id} | <strong>Class:</strong> ${student.class} | <strong>Roll:</strong> ${student.roll}</p>
+                    <p class="text-sm"><strong>Guardian:</strong> ${student.guardian}</p>
+                    <p class="text-sm"><strong>Status:</strong> <span class="badge ${statusClass}">${student.status.toUpperCase()}</span></p>
+                `;
+                loadAdminTuitionManagement(studentId);
+                loadAdminBreakRequestsManagement(studentId);
+            } else {
+                $('studentInfo').innerHTML = '<p class="text-danger">Student details not found.</p>';
+            }
+        }
+
+        function loadAdminTuitionManagement(studentId) {
+            const tuitionTableBody = $('studentTuitionTable');
+            const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', studentId);
+
+            onSnapshot(tuitionDocRef, (docSnap) => {
+                tuitionTableBody.innerHTML = '';
+                if (docSnap.exists()) {
+                    const feeData = docSnap.data();
+                    const months = Object.keys(feeData).sort((a, b) => a.localeCompare(b)).reverse();
+                    
+                    months.forEach(monthYear => {
+                        const fee = feeData[monthYear];
+                        const dateObj = new Date(monthYear);
+                        const monthName = MONTHS[dateObj.getMonth()];
+                        const year = dateObj.getFullYear();
+                        
+                        const statusClass = fee.status === 'paid' ? 'paid-badge' : fee.status === 'unpaid' ? 'unpaid-badge' : 'break-badge';
+                        const paymentDate = fee.date ? new Date(fee.date).toLocaleDateString() : 'N/A';
+                        
+                        let actionButton;
+                        if (fee.status === 'paid') {
+                            actionButton = `<button class="text-xs bg-danger text-white py-1 px-3 rounded hover:bg-red-600 transition" data-action="unpaid" data-month="${monthYear}">Mark Unpaid</button>`;
+                        } else if (fee.status === 'unpaid') {
+                            actionButton = `<button class="text-xs bg-primary text-white py-1 px-3 rounded hover:bg-primary-dark transition" data-action="paid" data-month="${monthYear}">Mark Paid</button>`;
+                        } else {
+                            actionButton = `<span class="text-xs text-gray-500">Break Month</span>`;
+                        }
+
+                        const row = document.createElement('tr');
+                        row.className = 'border-b hover:bg-gray-100';
+                        row.innerHTML = `
+                            <td class="py-3 px-6 text-left whitespace-nowrap">${monthName} ${year}</td>
+                            <td class="py-3 px-6 text-center"><span class="badge ${statusClass}">${fee.status.toUpperCase()}</span></td>
+                            <td class="py-3 px-6 text-center">${actionButton}</td>
+                        `;
+                        tuitionTableBody.appendChild(row);
+                    });
+                    
+                    // Add listeners for tuition action buttons
+                    tuitionTableBody.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const action = e.target.getAttribute('data-action');
+                            const month = e.target.getAttribute('data-month');
+                            handleTuitionPayment(studentId, month, action);
+                        });
+                    });
+                }
+            }, (error) => {
+                console.error("Error fetching admin tuition:", error);
+                tuitionTableBody.innerHTML = '<tr><td colspan="3" class="text-danger py-4">Failed to load tuition data.</td></tr>';
+            });
+        }
+
+        async function handleTuitionPayment(studentId, monthYear, newStatus) {
+            toggleLoading(true);
+            try {
+                const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', studentId);
+                const updateField = {};
+                updateField[`${monthYear}.status`] = newStatus;
+                updateField[`${monthYear}.date`] = newStatus === 'paid' ? new Date().toISOString() : null;
+
+                await updateDoc(tuitionDocRef, updateField);
+                showMessage(`Tuition for ${monthYear} marked as ${newStatus.toUpperCase()}.`, false);
+            } catch (error) {
+                console.error("Tuition Update Error:", error);
+                showMessage('Failed to update tuition status.', true);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function listenToAllBreakRequests() {
+            const breaksCollectionRef = collection(db, APP_COLLECTION_PATH(appId), 'breaks');
+            
+            // Listen for all break requests
+            onSnapshot(breaksCollectionRef, (snapshot) => {
+                const allBreakRequests = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                if (activeAdminStudentId) {
+                    // Only show requests for the currently active student in detail view
+                    const studentRequests = allBreakRequests.filter(req => req.studentId === activeAdminStudentId);
+                    renderAdminBreakRequests(studentRequests);
+                }
+            }, (error) => {
+                console.error("Error loading all break requests:", error);
+            });
+        }
+
+        function renderAdminBreakRequests(requests) {
+            const listEl = $('adminBreakRequestsList');
+            listEl.innerHTML = '';
+            
+            if (requests.length === 0) {
+                listEl.innerHTML = '<li class="text-gray-500 p-3">No break requests for this student.</li>';
+                return;
+            }
+
+            requests.sort((a, b) => new Date(b.requestedAt) - new Date(a.requestedAt)).forEach(data => {
+                const statusClass = data.status === 'approved' ? 'approved-badge' : data.status === 'rejected' ? 'rejected-badge' : 'pending-badge';
+                
+                const item = document.createElement('li');
+                item.className = 'p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between items-center';
+                item.innerHTML = `
+                    <div>
+                        <p class="font-medium">Break starting: ${data.startMonth} (${data.duration} months)</p>
+                        <p class="text-xs text-gray-500">Requested: ${new Date(data.requestedAt).toLocaleDateString()}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="badge ${statusClass}">${data.status.toUpperCase()}</span>
+                        ${data.status === 'pending' ? `
+                            <button class="text-xs bg-primary text-white py-1 px-3 rounded hover:bg-primary-dark transition" data-action="approved" data-id="${data.id}">Approve</button>
+                            <button class="text-xs bg-danger text-white py-1 px-3 rounded hover:bg-red-600 transition" data-action="rejected" data-id="${data.id}">Reject</button>
+                        ` : ''}
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+            
+            listEl.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const action = e.target.getAttribute('data-action');
+                    const requestId = e.target.getAttribute('data-id');
+                    handleBreakApproval(requestId, action, activeAdminStudentId);
+                });
+            });
+        }
+
+        async function handleBreakApproval(requestId, status, studentId) {
+            // Using a simple custom message instead of confirm()
+            if (!window.confirm(`Are you sure you want to ${status.toUpperCase()} this break request?`)) return;
+
+            toggleLoading(true);
+            try {
+                const breaksCollectionRef = collection(db, APP_COLLECTION_PATH(appId), 'breaks');
+                const requestDocRef = doc(breaksCollectionRef, requestId);
+
+                // 1. Update the break request status
+                await updateDoc(requestDocRef, { status: status });
+
+                if (status === 'approved') {
+                    const requestSnap = await getDoc(requestDocRef);
+                    const requestData = requestSnap.data();
+
+                    // 2. Update tuition status to 'break' for all months in the duration
+                    const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', studentId);
+                    const tuitionUpdates = {};
+                    
+                    const start = new Date(requestData.startMonth);
+                    for (let i = 0; i < requestData.duration; i++) {
+                        const breakDate = new Date(start.getFullYear(), start.getMonth() + i, 1);
+                        const breakMonthYear = getMonthYear(breakDate);
+                        // Check if the tuition record exists before trying to update
+                        tuitionUpdates[`${breakMonthYear}.status`] = 'break';
+                        tuitionUpdates[`${breakMonthYear}.date`] = null; // No payment date for break
+                    }
+
+                    if (Object.keys(tuitionUpdates).length > 0) {
+                         // Use merge true to add new months if they weren't in the original 12-month initialization
+                         await updateDoc(tuitionDocRef, tuitionUpdates);
+                    }
+                }
+                
+                showMessage(`Break request ${requestId} ${status} successfully. Tuition updated if approved.`, false);
+                
+            } catch (error) {
+                console.error("Break Approval Error:", error);
+                showMessage('Failed to update break request status.', true);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        // --- START APPLICATION ---
+        window.onload = initializeFirebase;
+        // Removed the problematic call to setupAuthListener() here: setupAuthListener(); 
+        
+    </script>
 </body>
 </html>

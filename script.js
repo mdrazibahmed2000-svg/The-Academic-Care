@@ -37,15 +37,25 @@ async function initializeAppAndAuth() {
         db = getDatabase(app); 
         auth = getAuth(app);
 
+        // Set persistence before attempting any auth calls
         await setPersistence(auth, browserSessionPersistence);
         
-        // CRITICAL: Sign in anonymously to ensure an auth.uid exists for read/write permissions
-        await signInAnonymously(auth); 
+        // --- CRITICAL FIX FOR ADMIN TOKEN: Prevents anonymous override ---
+        // Only sign in anonymously IF no user is currently active (i.e., not a logged-in Admin).
+        if (!auth.currentUser) {
+            await signInAnonymously(auth); 
+        }
+        // -----------------------------------------------------------------
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
+                // Determine if the user is a full Admin (password user)
+                const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
+
                 currentUserId = user.uid;
-                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${user.isAnonymous ? 'Anonymous' : 'Password'})`; 
+                // Update the display to confirm the session type
+                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Password' : 'Anonymous'})`; 
+                
                 checkLoginStatus();
             } else {
                 currentUserId = null;
@@ -109,11 +119,14 @@ async function checkLoginStatus() {
 
     if (loginId) {
         if (isAdmin) {
-            if (auth.currentUser && auth.currentUser.email) {
+            // Check if the current user is actually a password-authenticated user
+            const isPasswordUser = auth.currentUser && auth.currentUser.providerData.some(p => p.providerId === 'password');
+
+            if (isPasswordUser) {
                 await initializeAdminPanel();
                 showDashboard(true);
             } else {
-                 // Force Admin re-login if only anonymous auth remains
+                 // If the loginId is 'admin' but the session is Anonymous, force logout/re-login
                 logout(); 
             }
         } else {
@@ -165,6 +178,7 @@ async function handleAdminLoginWithEmail(email, password) {
     errorElement.textContent = '';
     
     try {
+        // Sign in with email and password
         await signInWithEmailAndPassword(auth, email, password);
 
         localStorage.setItem('appLoginId', 'admin');
@@ -179,7 +193,7 @@ async function handleAdminLoginWithEmail(email, password) {
     }
 }
 
-// FIX FOR APPROVED STUDENT LOGIN ISSUE
+// FIX for approved student login issue (bypasses data.id check)
 async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
@@ -203,7 +217,6 @@ async function handleStudentLogin(studentId) {
     // 3. CRITICAL FIX: Prioritize login for approved students by bypassing the strict 'data.id' check.
     if (data.status === 'approved') {
         
-        // Ensure currentStudentData is populated using the correct studentId from the path.
         currentStudentData = { id: studentId, ...data };
         
         // PROCEED TO LOGIN
@@ -235,6 +248,7 @@ window.logout = function () {
     currentStudentData = null;
     currentUserId = null;
     
+    // Sign out the current user, then sign in anonymously to keep basic read access
     signOut(auth).then(() => {
         signInAnonymously(auth); 
     });
@@ -266,7 +280,7 @@ window.registerStudent = async function () {
             return;
         }
 
-        // CRITICAL: Ensure the 'id' field is explicitly set here for future login success
+        // Ensure the 'id' field is explicitly set here for future login success
         await set(getStudentRef(newId), {
             name: name,
             guardianPhone: guardianPhone,
@@ -338,7 +352,7 @@ window.approveStudent = async function (studentId) {
     }
 }
 
-// CRITICAL FIX: Added permission check and improved error handling for Admin writes
+// CRITICAL FIX: Robust permission check and error handling for Admin writes
 window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = ref(getFeesRef(studentId), monthKey);
     

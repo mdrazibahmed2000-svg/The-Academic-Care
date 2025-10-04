@@ -3,271 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Care Portal</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>The Academic Care Portal</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        /* General Styles */
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f9fb;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
         }
+
         .container {
-            max-width: 1000px;
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        .card {
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
+
+        h1, h2, h3 { text-align: center; color: #333; }
+        input, button, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
-        .status-paid { color: #10B981; font-weight: 600; }
-        .status-unpaid { color: #EF4444; font-weight: 600; }
-        .status-break { color: #F59E0B; font-weight: 600; }
-        .status-unrecorded { color: #6B7280; }
-        .tabBtn {
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .tabBtn.active {
-            background-color: #3b82f6;
+
+        button {
+            background-color: #4CAF50;
             color: white;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.4);
+            border: none;
+            cursor: pointer;
         }
-        .tabBtn:hover:not(.active) {
-            background-color: #E5E7EB;
+
+        button:hover { background-color: #45a049; }
+
+        .hidden { display: none; }
+        #message { text-align: center; color: red; margin-top: 10px; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .paid { 
+            background-color: #4CAF50; /* Green background */
+            color: white; 
+            padding: 5px; 
+            border-radius: 5px; 
+        }
+        .unpaid { 
+            background-color: #f44336; /* Red background */
+            color: white; 
+            padding: 5px; 
+            border-radius: 5px; 
+        }
+        /* Status classes for non-table sections */
+        .status-paid { color: #4CAF50; font-weight: bold; }
+        .status-unpaid { color: #f44336; font-weight: bold; }
+        .break { background-color: #ff9800; color: white; padding: 5px; border-radius: 5px; }
+
+
+        /* Tabs */
+        .tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+        .tabBtn {
+            background-color: #eee;
+            border: none;
+            padding: 10px 15px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .tabBtn.active { background-color: #4CAF50; color: white; }
+        .tabContent { margin-top: 20px; }
+        .tabContent.hidden { display: none; }
+
+        /* Lists */
+        ul { list-style-type: none; padding: 0; }
+        ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; cursor: pointer; border-radius: 5px; }
+        ul li button { margin-left: 10px; padding: 5px 10px; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container { width: 90%; padding: 15px; }
+            .tabs { flex-direction: column; }
+            .tabBtn { width: 100%; margin-bottom: 5px; }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
+    <div class="container">
+        <h1>The Academic Care</h1>
 
-    <div class="container mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-blue-700">Academic Care Portal</h1>
-            <p class="text-gray-500">Student & Administration Access</p>
-        </header>
-
-        <!-- Message/Error Display -->
-        <div id="message" class="text-center p-3 mb-6 font-semibold rounded-lg text-red-600"></div>
-
-        <!-- 1. Login/Initial Container -->
-        <div id="loginContainer" class="card p-6 md:p-10 w-full max-w-md mx-auto">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Login</h2>
+        <div id="loginContainer">
+            <input type="text" id="userID" placeholder="Student ID or 'admin'">
             
-            <div class="space-y-4">
-                <div>
-                    <label for="userID" class="block text-sm font-medium text-gray-700 mb-1">Student ID or "admin"</label>
-                    <input type="text" id="userID" placeholder="E.g., S2406001 or admin" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                
-                <!-- Admin Only Fields -->
-                <div id="adminLoginFields" class="hidden space-y-4 pt-2">
-                    <div>
-                        <label for="adminEmail" class="block text-sm font-medium text-gray-700 mb-1">Admin Email</label>
-                        <input type="email" id="adminEmail" placeholder="admin@school.edu" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label for="adminPassword" class="block text-sm font-medium text-gray-700 mb-1">Admin Password</label>
-                        <input type="password" id="adminPassword" placeholder="password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                </div>
-
-                <button id="loginBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Login</button>
+            <div id="adminLoginFields" class="hidden">
+                <input type="email" id="adminEmail" placeholder="Admin Email">
+                <input type="password" id="adminPassword" placeholder="Admin Password">
             </div>
-            
-            <p class="mt-6 text-center text-sm text-gray-500">
-                New Student? 
-                <button id="applyBtn" class="text-blue-600 font-medium hover:text-blue-700 transition">Click here to register.</button>
-            </p>
+
+            <button id="loginBtn">Login</button>
+            <button id="applyBtn">Apply for Registration</button>
+            <div id="message" style="color: red; margin-top: 10px;"></div>
         </div>
 
-        <!-- 2. Registration Container -->
-        <div id="registrationContainer" class="card p-6 md:p-10 w-full max-w-lg mx-auto hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">New Student Registration</h2>
-            <form id="registrationForm" class="space-y-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" id="name" required class="w-full p-3 border border-gray-300 rounded-lg">
-                </div>
-                <div class="flex space-x-4">
-                    <div class="flex-1">
-                        <label for="class" class="block text-sm font-medium text-gray-700 mb-1">Class (6-10)</label>
-                        <select id="class" required class="w-full p-3 border border-gray-300 rounded-lg appearance-none">
-                            <option value="">Select Class</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
-                    <div class="flex-1">
-                        <label for="roll" class="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
-                        <input type="number" id="roll" required min="1" class="w-full p-3 border border-gray-300 rounded-lg">
-                    </div>
-                </div>
-                <div>
-                    <label for="guardian" class="block text-sm font-medium text-gray-700 mb-1">Guardian Phone/Contact</label>
-                    <input type="text" id="guardian" required class="w-full p-3 border border-gray-300 rounded-lg">
-                </div>
-                <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg font-semibold hover:bg-green-700 transition">Submit Registration</button>
+        <div id="registrationContainer" class="hidden">
+            <h2>New Student Registration</h2>
+            <form id="registrationForm">
+                <input type="text" id="name" placeholder="Full Name" required>
+                <select id="class" required>
+                    <option value="" disabled selected>Select Class (6-10)</option>
+                    <option value="06">Class 06</option>
+                    <option value="07">Class 07</option>
+                    <option value="08">Class 08</option>
+                    <option value="09">Class 09</option>
+                    <option value="10">Class 10</option>
+                </select>
+                <input type="text" id="roll" placeholder="Roll Number (e.g., 001)" maxlength="3" required>
+                <input type="tel" id="guardian" placeholder="Guardian Phone Number" required>
+                <button type="submit">Submit Registration</button>
+                <p id="studentIDDisplay" style="margin-top: 15px; color: #333;"></p>
+                <button type="button" id="backToLogin">Back to Login</button>
             </form>
-            <p id="studentIDDisplay" class="mt-4 text-center font-medium text-sm text-gray-600"></p>
-            <button id="backToLogin" class="w-full mt-4 text-blue-600 font-medium hover:text-blue-700 transition p-2 border border-blue-100 rounded-lg">Back to Login</button>
         </div>
 
-        <!-- 3. Student Panel -->
-        <div id="studentPanel" class="card p-6 md:p-10 mx-auto hidden">
-            <div class="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Student Dashboard</h2>
-                <button id="studentLogoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
+        <div id="studentPanel" class="hidden">
+            <h2>Student Portal</h2>
+            <div class="tabs">
+                <button class="tabBtn active" data-tab="profile" id="profileBtn">My Profile</button>
+                <button class="tabBtn" data-tab="tuition" id="tuitionBtn">Tuition Fee Status</button>
+                <button class="tabBtn" data-tab="break" id="breakBtn">Request Break</button>
             </div>
 
-            <!-- Student Tabs -->
-            <div class="flex space-x-3 mb-6 border-b pb-3">
-                <button id="profileBtn" class="tabBtn active">Profile</button>
-                <button id="tuitionBtn" class="tabBtn">Tuition Status</button>
-                <button id="breakBtn" class="tabBtn">Request Break</button>
+            <div id="profile" class="tabContent">
+                <h3>Profile Details</h3>
             </div>
 
-            <!-- Tab Content -->
-            
-            <!-- Profile Section -->
-            <div id="profile" class="space-y-4">
-                <h3 class="text-xl font-semibold mb-3">My Details</h3>
-                <div id="studentInfo" class="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                    <!-- Student info loaded by JS -->
-                </div>
-            </div>
-
-            <!-- Tuition Section -->
-            <div id="tuition" class="hidden">
-                <h3 class="text-xl font-semibold mb-4">Monthly Tuition Status (Current Year)</h3>
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tuitionTable" class="bg-white divide-y divide-gray-200">
-                            <!-- Tuition status rows loaded by JS -->
+            <div id="tuition" class="tabContent hidden">
+                <h3>Monthly Fee Status</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Status</th>
+                            <th>Payment Date</th> </tr>
+                    </thead>
+                    <tbody id="tuitionTable">
                         </tbody>
-                    </table>
-                </div>
+                </table>
             </div>
 
-            <!-- Break Section -->
-            <div id="break" class="hidden">
-                <h3 class="text-xl font-semibold mb-4">Academic Break Request</h3>
-                <div id="breakMessage" class="p-4 mb-4 bg-gray-100 border border-gray-300 rounded-lg text-sm">
-                    <!-- Dynamic message about break status/availability -->
-                </div>
-                <div class="space-y-4 p-4 border rounded-lg">
-                    <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                        <div class="flex-1">
-                            <label for="breakStartMonth" class="block text-sm font-medium text-gray-700 mb-1">Start Month</label>
-                            <select id="breakStartMonth" class="w-full p-3 border border-gray-300 rounded-lg"></select>
-                        </div>
-                        <div class="flex-1">
-                            <label for="breakDuration" class="block text-sm font-medium text-gray-700 mb-1">Duration (Months)</label>
-                            <select id="breakDuration" class="w-full p-3 border border-gray-300 rounded-lg"></select>
-                        </div>
-                    </div>
-                    <button id="requestBreakBtn" class="w-full bg-orange-500 text-white p-3 rounded-lg font-semibold hover:bg-orange-600 transition" disabled>Request Break</button>
+            <div id="break" class="tabContent hidden">
+                <h3>Request Break</h3>
+                
+                <div id="breakFormContent">
+                    <label for="breakStartMonth" style="display: block; text-align: left; margin-top: 10px;">Select break start month:</label>
+                    <select id="breakStartMonth" required></select>
+                    
+                    <label for="breakDuration" style="display: block; text-align: left; margin-top: 10px;">Select duration (in months):</label>
+                    <select id="breakDuration" required></select>
+                    
+                    <button id="requestBreakBtn">Request Break</button>
+                    <p id="breakMessage" style="margin-top: 10px; color: #333;"></p>
                 </div>
             </div>
-            
+            <button id="studentLogoutBtn" style="margin-top: 20px;">Logout</button>
         </div>
-        
-        <!-- 4. Admin Panel -->
-        <div id="adminPanel" class="card p-6 md:p-10 mx-auto hidden">
-            <div class="flex justify-between items-center mb-6 border-b pb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Admin Console</h2>
-                <button id="adminLogoutBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition">Logout</button>
+
+        <div id="adminPanel" class="hidden">
+            <h2>Admin Panel</h2>
+            <button id="adminLogoutBtn">Logout</button>
+
+            <div class="tabs" style="margin-top: 20px;">
+                <button class="tabBtn active" data-tab="pending">Pending Students</button>
+                <button class="tabBtn" data-tab="class06">Class 06</button>
+                <button class="tabBtn" data-tab="class07">Class 07</button>
+                <button class="tabBtn" data-tab="class08">Class 08</button>
+                <button class="tabBtn" data-tab="class09">Class 09</button>
+                <button class="tabBtn" data-tab="class10">Class 10</button>
+                <button class="tabBtn" data-tab="studentDetail" style="display: none;">Student Detail</button>
             </div>
 
-            <!-- Admin Tabs -->
-            <div class="tabs flex flex-wrap gap-3 mb-6 border-b pb-3">
-                <button data-tab="pending" class="tabBtn active">Pending Registrations</button>
-                <button data-tab="class06" class="tabBtn">Class 6</button>
-                <button data-tab="class07" class="tabBtn">Class 7</button>
-                <button data-tab="class08" class="tabBtn">Class 8</button>
-                <button data-tab="class09" class="tabBtn">Class 9</button>
-                <button data-tab="class10" class="tabBtn">Class 10</button>
-                <button data-tab="studentDetail" class="tabBtn hidden">Student Detail</button>
+            <div id="pending" class="tabContent">
+                <h3>Pending Students</h3>
+                <ul id="pendingStudents">
+                    </ul>
             </div>
 
-            <!-- Tab Content -->
+            <div id="class06" class="tabContent hidden"><h3>Class 06 Students</h3><ul id="class06Students"></ul></div>
+            <div id="class07" class="tabContent hidden"><h3>Class 07 Students</h3><ul id="class07Students"></ul></div>
+            <div id="class08" class="tabContent hidden"><h3>Class 08 Students</h3><ul id="class08Students"></ul></div>
+            <div id="class09" class="tabContent hidden"><h3>Class 09 Students</h3><ul id="class09Students"></ul></div>
+            <div id="class10" class="tabContent hidden"><h3>Class 10 Students</h3><ul id="class10Students"></ul></div>
             
-            <!-- Pending Registrations -->
-            <div id="pending" class="tabContent space-y-3">
-                <h3 class="text-xl font-semibold mb-3">Students Awaiting Approval</h3>
-                <ul id="pendingStudents" class="space-y-2">
-                    <!-- Pending students loaded by JS -->
-                    <li>No pending registrations.</li>
-                </ul>
-            </div>
-
-            <!-- Class Lists -->
-            <div id="class06" class="tabContent hidden">
-                <h3 class="text-xl font-semibold mb-3">Approved Students - Class 6</h3>
-                <ul id="class06Students" class="space-y-1"></ul>
-            </div>
-            <div id="class07" class="tabContent hidden">
-                <h3 class="text-xl font-semibold mb-3">Approved Students - Class 7</h3>
-                <ul id="class07Students" class="space-y-1"></ul>
-            </div>
-            <div id="class08" class="tabContent hidden">
-                <h3 class="text-xl font-semibold mb-3">Approved Students - Class 8</h3>
-                <ul id="class08Students" class="space-y-1"></ul>
-            </div>
-            <div id="class09" class="tabContent hidden">
-                <h3 class="text-xl font-semibold mb-3">Approved Students - Class 9</h3>
-                <ul id="class09Students" class="space-y-1"></ul>
-            </div>
-            <div id="class10" class="tabContent hidden">
-                <h3 class="text-xl font-semibold mb-3">Approved Students - Class 10</h3>
-                <ul id="class10Students" class="space-y-1"></ul>
-            </div>
-            
-            <!-- Student Detail View -->
             <div id="studentDetail" class="tabContent hidden">
-                <h3 class="text-2xl font-bold mb-4 border-b pb-2">Student Detail & Management</h3>
-                
-                <div id="studentInfoDiv" class="p-4 mb-4 bg-gray-50 border rounded-lg space-y-1">
-                    <!-- Detailed student info loaded by JS -->
-                    <p>Select a student from the class lists to view details.</p>
-                </div>
-                
-                <div id="breakRequestManagement" class="mb-4 hidden">
-                    <!-- Break request status and buttons loaded by JS -->
-                </div>
-
-                <div class="overflow-x-auto rounded-lg border">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentTuitionTable" class="bg-white divide-y divide-gray-200">
-                            <!-- Admin tuition status rows loaded by JS -->
+                <h3>Student Detail</h3>
+                <div id="studentInfo"></div>
+                <h4>Tuition Management</h4>
+                <table>
+                    <thead>
+                        <tr><th>Month</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="studentTuitionTable">
                         </tbody>
-                    </table>
-                </div>
+                </table>
             </div>
-
         </div>
-
     </div>
 
-    <!-- Link to the JavaScript logic file -->
-    <script type="module" src="./script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>

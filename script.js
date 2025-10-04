@@ -137,11 +137,16 @@ function showPanel(targetPanel) {
 
 // Calls loadBreakRequestForm when the Break tab is opened
 function toggleStudentPanelContent(contentSection) {
-    [profileSection, tuitionSection, breakSection].forEach(section => {
+    // Hide all tab contents
+    [profileSection, tuitionSection, breakSection, 
+     document.getElementById("pending"), document.getElementById("studentDetail") // Include admin detail views to be safe
+    ].forEach(section => {
         if(section) section.classList.add("hidden");
     });
+    // Show the selected content
     if(contentSection) contentSection.classList.remove("hidden");
 
+    // CRITICAL: Load form data when the break section is opened.
     if (contentSection === breakSection && currentLoggedInStudentId) {
         loadBreakRequestForm(currentLoggedInStudentId);
     }
@@ -164,7 +169,6 @@ function handleAdminTabChange(e) {
 // --- Login/Logout/Registration ---
 // ====================================================================
 
-// UPDATED: Reinforced student login for clearer error handling
 async function handleLogin() {
     // 1. Clear previous messages and trim ID input
     messageDiv.textContent = '';
@@ -280,7 +284,7 @@ async function handleRegistration(e) {
             guardian: guardian,
             approved: false,
             tuitionStatus: tuitionStatus,
-            breakRequest: null, // Ensure this starts as null/empty
+            breakRequest: null, 
             registeredAt: Date.now()
         });
 
@@ -332,7 +336,7 @@ function renderStudentProfile(data) {
     `;
 }
 
-// UPDATED: Separates Status and Payment Date into two columns
+// Renders the Monthly Fee Table with separate Status and Payment Date columns
 function renderStudentFeeTable(tuitionStatus) {
     if (!tuitionTableBody) return;
     tuitionTableBody.innerHTML = '';
@@ -346,23 +350,24 @@ function renderStudentFeeTable(tuitionStatus) {
         if (data.paid) {
             statusText = `Paid`; 
             statusClass = "paid";
-            dateText = data.date; // Use the actual date from data
+            dateText = data.date; 
         } else if (data.isBreak) {
             statusText = `Break`;
             statusClass = "break";
-            dateText = data.date || 'Requested'; // Display date or a specific message for break
+            dateText = data.date || 'Requested'; 
         }
         
         const row = tuitionTableBody.insertRow();
         row.innerHTML = `
             <td>${month}</td>
             <td><span class="${statusClass}">${statusText}</span></td>
-            <td>${dateText}</td> `;
+            <td>${dateText}</td> 
+        `;
     });
 }
 
 // ====================================================================
-// --- BREAK REQUEST LOGIC (Updated to show only future months) ---
+// --- BREAK REQUEST LOGIC (Updated to show all UNPAID months) ---
 // ====================================================================
 
 async function loadBreakRequestForm(studentId) {
@@ -376,37 +381,38 @@ async function loadBreakRequestForm(studentId) {
     const snapshot = await get(ref(db, `students/${studentId}/tuitionStatus`));
     const tuitionStatus = snapshot.val() || {};
 
-    const currentDate = new Date();
-    // Assuming the user's location is Bangladesh (+6), the current month index is reliable for academic year check.
-    const currentMonthIndex = currentDate.getMonth(); // 0 (Jan) to 11 (Dec)
-    const currentYear = currentDate.getFullYear();
+    const currentYear = new Date().getFullYear();
 
-    let lastRecordedMonthIndex = -1; 
+    let lastPaidMonthIndex = -1; 
     
-    // 1. Find the index of the last month that has *any* status recorded (Paid, Unpaid, or Break)
+    // 1. Find the index of the last month that was explicitly PAID.
     MONTHS.forEach((month, index) => {
         const data = tuitionStatus[month];
-        // Check if the month entry exists AND has been processed (paid=true, paid=false, or isBreak=true)
-        if (data && (data.paid === true || data.paid === false || data.isBreak === true)) {
-            lastRecordedMonthIndex = index;
+        if (data && data.paid === true) {
+            lastPaidMonthIndex = index;
         }
     });
 
-    // 2. Determine the earliest possible start month for the break
-    // It must be one month after the last recorded month, AND one month after the current calendar month.
-    let earliestStartMonthIndex = Math.max(lastRecordedMonthIndex, currentMonthIndex) + 1;
+    // 2. Determine the earliest possible start month for the break.
+    // This is the month immediately following the last paid month.
+    let earliestStartMonthIndex = lastPaidMonthIndex + 1;
+    
+    // If the lastPaidMonthIndex is -1 (no payments), start from January (index 0).
+    if (lastPaidMonthIndex === -1) {
+        earliestStartMonthIndex = 0;
+    }
     
     // 3. Check if any months are available for the current academic year (Jan-Dec)
     if (earliestStartMonthIndex >= 12) {
-        breakMessage.textContent = `All months in the current academic year (${currentYear}) are already accounted for.`;
+        breakMessage.textContent = `All months in the current academic year (${currentYear}) are already accounted for (Paid/Break).`;
         return;
     }
 
     const monthsRemainingInYear = 12 - earliestStartMonthIndex;
-    const startMonth = MONTHS[earliestStartMonthIndex];
+    const startMonthName = MONTHS[earliestStartMonthIndex];
     
     // 4. Populate the Start Month Select 
-    // Add all available future months starting from the earliest calculated index
+    // Add all available months starting from the earliest calculated index.
     for (let i = earliestStartMonthIndex; i < 12; i++) {
         breakStartMonthSelect.add(new Option(`${MONTHS[i]} (${currentYear})`, MONTHS[i]));
     }
@@ -416,7 +422,7 @@ async function loadBreakRequestForm(studentId) {
           breakDurationSelect.add(new Option(`${i} month${i > 1 ? 's' : ''}`, i));
     }
 
-    breakMessage.textContent = `You can request a break starting from ${startMonth}. Max duration: ${monthsRemainingInYear} month(s).`;
+    breakMessage.textContent = `You can request a break starting from ${startMonthName}. Max duration: ${monthsRemainingInYear} month(s).`;
 }
 
 
@@ -441,7 +447,6 @@ async function handleBreakRequest() {
 
     const endMonth = MONTHS[endMonthIndex];
     
-    // NOTE: Using confirm() is typically discouraged in Canvas, but keeping it for application flow consistency.
     const confirmationMessage = 
         `Confirm break request for ${requestedMonths} month(s), starting ${selectedStartMonth} and ending ${endMonth}?`;
 
@@ -522,7 +527,6 @@ async function handleApproveStudent(e) {
     if (!e.target.classList.contains("approveBtn")) return;
     
     if (!auth.currentUser || !auth.currentUser.providerData.some(p => p.providerId === 'password')) {
-        // NOTE: Replacing alert() with console.error or custom modal UI is best practice.
         console.error("Permission Denied: Admin password authentication required."); 
         return;
     }
@@ -647,7 +651,6 @@ window.markBreak = async function(studentId, month) {
         console.error("Permission Denied: Admin password authentication required.");
         return;
     }
-    // NOTE: Using confirm() is typically discouraged in Canvas, but keeping it for application flow consistency.
     if (confirm(`Confirm marking ${month} as a Break month for ${studentId}?`)) {
         try {
             await update(ref(db, `students/${studentId}/tuitionStatus/${month}`), {
@@ -667,7 +670,6 @@ window.undoStatus = async function(studentId, month) {
         console.error("Permission Denied: Admin password authentication required.");
         return;
     }
-    // NOTE: Using confirm() is typically discouraged in Canvas, but keeping it for application flow consistency.
     if (confirm(`Are you sure you want to UNDO the status for ${month}? This will revert it to UNPAID.`)) {
         try {
             await update(ref(db, `students/${studentId}/tuitionStatus/${month}`), {

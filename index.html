@@ -4,7 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Academic Care Portal</title>
-    <link rel="stylesheet" href="style.css"> 
+    <style>
+        /* Basic inline styles for clarity (You should move these to style.css) */
+        .container { max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
+        input, select, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+        button { cursor: pointer; color: white; border: none; }
+        #loginBtn, #applyBtn, #requestBreakBtn, #studentLogoutBtn, #adminLogoutBtn { background-color: #4CAF50; }
+        .tabBtn { background-color: #f1f1f1; color: #333; margin: 0; padding: 10px; border-radius: 0; border-bottom: 2px solid transparent; }
+        .tabBtn.active { background-color: #ddd; border-bottom: 2px solid #4CAF50; }
+        .hidden { display: none !important; }
+        .status-paid { color: green; font-weight: bold; }
+        .status-unpaid { color: red; font-weight: bold; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 5px 0; border-bottom: 1px dotted #eee; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -20,7 +35,7 @@
 
             <button id="loginBtn">Login</button>
             <button id="applyBtn">Apply for Registration</button>
-            <div id="message"></div>
+            <div id="message" style="color: red; margin-top: 10px;"></div>
         </div>
 
         <div id="registrationContainer" class="hidden">
@@ -70,14 +85,14 @@
                 <h3>Request Break</h3>
                 
                 <div id="breakFormContent">
-                    <label for="breakStartMonth">Select break start month:</label>
+                    <label for="breakStartMonth" style="display: block; text-align: left; margin-top: 10px;">Select break start month:</label>
                     <select id="breakStartMonth" required></select>
                     
-                    <label for="breakDuration">Select duration (in months):</label>
+                    <label for="breakDuration" style="display: block; text-align: left; margin-top: 10px;">Select duration (in months):</label>
                     <select id="breakDuration" required></select>
                     
                     <button id="requestBreakBtn">Request Break</button>
-                    <p id="breakMessage" style="margin-top: 10px;"></p>
+                    <p id="breakMessage" style="margin-top: 10px; color: #333;"></p>
                 </div>
             </div>
             <button id="studentLogoutBtn" style="margin-top: 20px;">Logout</button>

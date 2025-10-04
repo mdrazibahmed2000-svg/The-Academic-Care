@@ -5,20 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Academic Care Portal</title>
     <style>
-        /* Basic inline styles for clarity (You should move these to style.css) */
-        .container { max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; text-align: center; }
-        input, select, button { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
-        button { cursor: pointer; color: white; border: none; }
-        #loginBtn, #applyBtn, #requestBreakBtn, #studentLogoutBtn, #adminLogoutBtn { background-color: #4CAF50; }
-        .tabBtn { background-color: #f1f1f1; color: #333; margin: 0; padding: 10px; border-radius: 0; border-bottom: 2px solid transparent; }
-        .tabBtn.active { background-color: #ddd; border-bottom: 2px solid #4CAF50; }
-        .hidden { display: none !important; }
-        .status-paid { color: green; font-weight: bold; }
-        .status-unpaid { color: red; font-weight: bold; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 5px 0; border-bottom: 1px dotted #eee; text-align: left; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        h1, h2, h3 { text-align: center; color: #333; }
+        input, button, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover { background-color: #45a049; }
+
+        .hidden { display: none; }
+        #message { text-align: center; color: red; margin-top: 10px; }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .paid { 
+            background-color: #4CAF50; /* Green background */
+            color: white; 
+            padding: 5px; 
+            border-radius: 5px; 
+        }
+        .unpaid { 
+            background-color: #f44336; /* Red background */
+            color: white; 
+            padding: 5px; 
+            border-radius: 5px; 
+        }
+        /* Status classes for non-table sections */
+        .status-paid { color: #4CAF50; font-weight: bold; }
+        .status-unpaid { color: #f44336; font-weight: bold; }
+        .break { background-color: #ff9800; color: white; padding: 5px; border-radius: 5px; }
+
+
+        /* Tabs */
+        .tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+        .tabBtn {
+            background-color: #eee;
+            border: none;
+            padding: 10px 15px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .tabBtn.active { background-color: #4CAF50; color: white; }
+        .tabContent { margin-top: 20px; }
+        .tabContent.hidden { display: none; }
+
+        /* Lists */
+        ul { list-style-type: none; padding: 0; }
+        ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; cursor: pointer; border-radius: 5px; }
+        ul li button { margin-left: 10px; padding: 5px 10px; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container { width: 90%; padding: 15px; }
+            .tabs { flex-direction: column; }
+            .tabBtn { width: 100%; margin-bottom: 5px; }
+        }
     </style>
 </head>
 <body>
@@ -74,7 +153,10 @@
                 <h3>Monthly Fee Status</h3>
                 <table>
                     <thead>
-                        <tr><th>Month</th><th>Status</th></tr>
+                        <tr>
+                            <th>Month</th>
+                            <th>Status</th>
+                            <th>Payment Date</th> </tr>
                     </thead>
                     <tbody id="tuitionTable">
                         </tbody>

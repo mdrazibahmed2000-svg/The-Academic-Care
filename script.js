@@ -195,6 +195,8 @@ async function handleLogin() {
         // Student Login path
         try {
             const studentRef = ref(db, `students/${id}`);
+            // This GET call now succeeds IF the security rule is correctly set to allow
+            // unauthenticated read for approved students.
             const snapshot = await get(studentRef);
 
             if (!snapshot.exists()) {
@@ -217,10 +219,9 @@ async function handleLogin() {
             showPanel(studentPanel);
 
         } catch (e) {
-            // CRITICAL: Catch database errors (e.g., Permission Denied)
+            // Catch database errors (e.g., Permission Denied)
             let errorMessage = e.message;
             if (errorMessage.includes("permission_denied")) {
-                 // **THIS WAS THE ISSUE. The security rules prevented the GET.**
                  errorMessage = "Login failed. You might not be approved yet, or there is a permission issue.";
             }
             console.error("Student Login Error:", e);
@@ -333,7 +334,7 @@ function renderStudentProfile(data) {
     `;
 }
 
-// Renders months in Calendar Order (Jan-Dec)
+// UPDATED: Separates Status and Payment Date into two columns
 function renderStudentFeeTable(tuitionStatus) {
     if (!tuitionTableBody) return;
     tuitionTableBody.innerHTML = '';
@@ -342,20 +343,23 @@ function renderStudentFeeTable(tuitionStatus) {
         const data = tuitionStatus[month] || { paid: false, date: null };
         let statusText = "Unpaid";
         let statusClass = "unpaid";
+        let dateText = '---'; // Placeholder for unpaid/break/not recorded
 
         if (data.paid) {
-            statusText = `Paid (${data.date})`;
+            statusText = `Paid`; 
             statusClass = "paid";
+            dateText = data.date; // Use the actual date from data
         } else if (data.isBreak) {
-            statusText = `Break (${data.date})`;
+            statusText = `Break`;
             statusClass = "break";
+            dateText = data.date || 'Requested'; // Display date or a specific message for break
         }
         
         const row = tuitionTableBody.insertRow();
         row.innerHTML = `
             <td>${month}</td>
             <td><span class="${statusClass}">${statusText}</span></td>
-        `;
+            <td>${dateText}</td> `;
     });
 }
 

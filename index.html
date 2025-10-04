@@ -1,233 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Academic Care Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Base styles */
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-        }
-        .login-btn {
-            background-color: #6366f1; /* Indigo-500 */
-        }
-        .login-btn:hover {
-            background-color: #4f46e5; /* Indigo-600 */
-        }
-        
-        /* Custom styles for Status */
-        .status-paid { color: #10B981; font-weight: bold; } 
-        .status-unpaid { color: #EF4444; font-weight: bold; }
-        .status-pending { color: #F59E0B; font-weight: bold; }
-        .status-break { color: #3B82F6; font-weight: bold; } 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fee Management System</title>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        h1, h2, h3 { color: #333; }
+        .panel { 
+            display: none; 
+            margin-top: 25px; 
+            padding: 20px; 
+            border-radius: 8px; 
+            background-color: #fff; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .login-form { max-width: 350px; margin: 0 auto; padding: 25px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
+        .login-form input, .login-form button { display: block; width: 100%; margin-bottom: 12px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .login-form button { background-color: #007bff; color: white; cursor: pointer; border: none; }
+        .login-form button:hover { background-color: #0056b3; }
+        
+        /* Table Styles */
+        .fee-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .fee-table th, .fee-table td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+        .fee-table thead th { background-color: #e9ecef; }
+        
+        /* Status Classes */
+        .paid { color: #28a745; font-weight: bold; } /* Green */
+        .pending { color: #ffc107; font-weight: bold; } /* Yellow/Orange */
+        .break { color: #007bff; font-weight: bold; } /* Blue */
+        
+        /* Buttons */
+        .fee-action-btn { padding: 5px 10px; margin-right: 5px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; background-color: #f8f9fa; }
+        .fee-action-btn:hover { background-color: #e2e6ea; }
 
-        /* Dashboard layout adjustments for larger screens */
-        @media (min-width: 768px) {
-            #adminPanel #mainContent { 
-                display: grid; 
-                grid-template-columns: 1fr 1fr; 
-                gap: 1.5rem;
-            }
-        }
+        /* Student List Admin View */
+        #student-list-container div { border-bottom: 1px dashed #e0e0e0; padding: 8px; cursor: pointer; }
+        #student-list-container div:hover { background-color: #e9ecef; }
 
-        /* Fee list styling */
-        .fee-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #E5E7EB;
-        }
-
-        .break-btn { 
-            background-color: #F97316; 
-            color: white; 
-        }
-        .break-btn:hover { 
-            background-color: #EA580C; 
-        }
-        
-        /* Collapsible effect for smoother UX */
-        .collapsible-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out;
-            padding: 0;
-        }
-        
-    </style>
+        /* --- Modal Styles for Smooth UX --- */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s;
+        }
+        .modal-content input { margin-bottom: 15px; padding: 10px; width: 100%; box-sizing: border-box; }
+        .modal-buttons { text-align: right; }
+        .modal-buttons button { margin-left: 10px; padding: 8px 15px; }
+        
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+        @keyframes slideDown { from {top: -300px; opacity: 0;} to {top: 0; opacity: 1;} }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+<body>
 
-    <div id="authUserId" class="text-xs text-center text-gray-500 mb-4">Auth User ID: Loading...</div>
+    <h1>Student Fee Management System</h1>
+    <hr>
 
-    <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-indigo-700">Academic Care Portal</h1>
-        </header>
+    <div id="auth-container">
+        <div class="login-form">
+            <h2>Student Login</h2>
+            <input type="text" id="student-id-input" placeholder="Enter Student ID (e.g., S24001)">
+            <button onclick="handleStudentLogin()">Login as Student</button>
+            <p id="student-login-message" style="color: red; text-align: center;"></p>
+        </div>
 
-        <div id="initialView" class="card max-w-md mx-auto">
-            <h2 class="text-2xl font-semibold mb-4 text-center">Login</h2>
-            <div class="mb-4">
-                <label for="loginId" class="block text-sm font-medium text-gray-700">Student ID or 'admin'</label>
-                <input type="text" id="loginId" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="S2410001 or admin">
-            </div>
-            <p id="loginError" class="text-red-600 text-sm mb-4"></p>
-            <button onclick="login()" class="w-full text-white font-bold py-2 px-4 rounded login-btn mb-3">
-                Login
-            </button>
-            <button onclick="showRegister()" class="w-full bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded hover:bg-gray-300">
-                New Student Registration
-            </button>
-        </div>
+        <div class="login-form" style="margin-top: 20px;">
+            <h2>Admin Login</h2>
+            <input type="email" id="admin-email-input" placeholder="Admin Email">
+            <input type="password" id="admin-password-input" placeholder="Password">
+            <button onclick="handleAdminLogin()">Login as Admin</button>
+            <p id="admin-login-message" style="color: red; text-align: center;"></p>
+        </div>
 
+        <p style="text-align: center; margin-top: 15px;">
+            New student? <a href="#" onclick="showRegistrationForm()">Register Here</a>
+        </p>
+    </div>
 
-        <div id="registerView" class="card hidden max-w-md mx-auto">
-            <h2 class="text-2xl font-semibold mb-4 text-center">New Student Registration</h2>
-            <div class="space-y-4">
-                <div>
-                    <label for="regName" class="block text-sm font-medium text-gray-700">Student Name</label>
-                    <input type="text" id="regName" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="regClass" class="block text-sm font-medium text-gray-700">Class (e.g., 10)</label>
-                    <input type="number" id="regClass" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="regRoll" class="block text-sm font-medium text-gray-700">Roll Number (e.g., 01)</label>
-                    <input type="number" id="regRoll" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-                </div>
-                <div>
-                    <label for="regGuardianPhone" class="block text-sm font-medium text-gray-700">Guardian Phone Number</label>
-                    <input type="text" id="regGuardianPhone" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="01XXXXXXXXX">
-                </div>
-            </div>
-            <p id="registerError" class="text-red-600 text-sm mt-4"></p>
-            <button onclick="registerStudent()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4 mb-3">
-                Submit Registration
-            </button>
-            <button onclick="showLogin()" class="w-full bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded hover:bg-gray-300">
-                Back to Login
-            </button>
-        </div>
+    <div id="registration-container" class="panel">
+        <h2>Student Registration</h2>
+        <input type="text" id="reg-name" placeholder="Full Name">
+        <input type="text" id="reg-guardian-phone" placeholder="Guardian Phone">
+        <input type="text" id="reg-class" placeholder="Class">
+        <input type="text" id="reg-roll" placeholder="Roll No">
+        <button onclick="handleRegistration()">Submit Registration</button>
+        <p id="registration-message" style="margin-top: 10px;"></p>
+        <a href="#" onclick="showAuthContainer()">Back to Login</a>
+    </div>
 
+    <div id="student-panel" class="panel">
+        <h2>Welcome, <span id="student-name-display">Student</span>!</h2>
+        <p>Status: <span id="student-status-display"></span></p>
+        
+        <div id="student-fee-view"></div>
 
-        <div id="dashboardView" class="hidden relative space-y-6">
-            <button onclick="logout()" class="absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded">
-                Logout
-            </button>
-            
-            <h2 id="welcomeHeader" class="text-2xl font-semibold mb-6 text-center pt-2">Welcome!</h2>
+        <h3>Break Request</h3>
+        <select id="break-month-select"></select>
+        <button onclick="requestBreak()">Request Break</button>
+        <p id="break-request-message"></p>
 
-            <div id="studentPanel" class="space-y-6 max-w-md mx-auto">
-                
-                <div class="card bg-indigo-50">
-                    <h3 class="text-xl font-bold text-indigo-800 mb-2">My Profile</h3>
-                    <p class="text-sm"><strong>ID:</strong> <span id="studentIdDisplay"></span></p>
-                    <p class="text-sm"><strong>Class:</strong> <span id="studentClass"></span></p>
-                    <p class="text-sm"><strong>Status:</strong> <span id="studentStatus" class="font-bold status-paid"></span></p>
-                    <div id="breakRequestArea">
-                        </div>
-                </div>
+        <button onclick="logout()" style="margin-top: 20px;">Logout</button>
+    </div>
 
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-2">Monthly Fee Status</h3>
-                    <ul id="feeStatusList" class="list-none space-y-1">
-                        <li>Loading fee data...</li>
-                    </ul>
-                </div>
+    <div id="admin-panel" class="panel">
+        <h2>Admin Dashboard</h2>
+        <p>Logged in as: <span id="auth-uid-display"></span></p>
 
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-3">AI Fee Assistant (Gemini)</h3>
-                    <textarea id="geminiQuery" class="w-full border p-2 rounded resize-none" rows="3" placeholder="Ask about your fee status, policy, or payment methods..."></textarea>
-                    <button onclick="handleStudentQuery()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">
-                        Ask Assistant
-                    </button>
-                    
-                    <div id="geminiLoader" class="hidden text-center mt-2">
-                        <span class="text-blue-500">Generating response...</span>
-                    </div>
+        <h3>Student Search</h3>
+        <input type="text" id="admin-search-input" placeholder="Search by ID or Name" onkeyup="filterStudents()">
+        
+        <div id="student-list-container"></div>
 
-                    <div class="mt-4 p-3 bg-gray-50 border rounded">
-                        <strong class="block mb-1">Response:</strong>
-                        <p id="geminiResponse" class="text-gray-700 text-sm">Ready to assist...</p>
-                    </div>
-                </div>
+        <hr style="margin-top: 20px;">
+        <h3>Fee Management Detail</h3>
+        <div id="payments-container">
+            <p>Select a student above to view/manage fees.</p>
+        </div>
+        
+        <button onclick="logout()" style="margin-top: 20px;">Logout</button>
+    </div>
 
-            </div>
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Mark Payment</h3>
+            <p id="modal-message">Enter Payment Method:</p>
+            <input type="text" id="modal-input" placeholder="Cash, Bank Transfer, Bkash, etc.">
+            <div class="modal-buttons">
+                <button onclick="closeModal()">Cancel</button>
+                <button onclick="confirmPayment()">Confirm</button>
+            </div>
+        </div>
+    </div>
 
-            <div id="adminPanel" class="space-y-6 hidden">
-                
-                <div id="mainContent" class="space-y-6 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
-                
-                    <div class="card bg-yellow-50">
-                        <h3 class="text-lg font-semibold text-yellow-800 mb-3 cursor-pointer" onclick="toggleCollapsible('pendingStudentsList')">
-                            Pending Approvals <span id="pendingCount" class="font-normal">(0)</span>
-                        </h3>
-                        <ul id="pendingStudentsList" class="list-none space-y-2 collapsible-content">
-                            <p class="text-gray-500 text-sm">No pending students</p>
-                        </ul>
-                    </div>
-                    
-                    <div class="card bg-blue-50">
-                        <h3 class="text-lg font-semibold text-blue-800 mb-3 cursor-pointer" onclick="toggleCollapsible('breakRequestsList')">
-                            Break Requests <span id="breakCount" class="font-normal">(0)</span>
-                        </h3>
-                        <div id="breakRequestsList" class="space-y-2 collapsible-content"> 
-                            <p class="text-gray-500 text-sm">No pending break requests.</p>
-                        </div>
-                    </div>
-                
-                    <div class="card md:col-span-2">
-                        <h3 class="text-lg font-semibold mb-3">Fee Management</h3>
-                        
-                        <label for="studentSelector" class="block text-sm font-medium text-gray-700 mb-1">Select Approved Student</label>
-                        
-                        <select id="studentSelector" onchange="loadMonthlyFees()" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 mb-4">
-                            <option value="">Select Student...</option>
-                        </select>
-
-                        <div id="draftCommButton" class="mb-4">
-                            </div>
-
-                        <h4 class="text-md font-semibold mb-2 border-t pt-2">Monthly Payments</h4>
-                        
-                        <ul id="monthlyFees" class="list-none space-y-1">
-                            <li>Select a student to view fees.</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        
-        <div id="communicationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-                <h3 class="text-xl font-bold mb-4">Draft Communication</h3>
-                
-                <div id="communicationLoader" class="text-center text-blue-500 mb-3 hidden">Generating message...</div>
-                
-                <textarea id="draftedCommunication" class="w-full border p-2 rounded resize-none mb-4" rows="6" placeholder="Drafted message will appear here..." readonly></textarea>
-                
-                <div class="flex justify-end space-x-3">
-                    <button onclick="copyToClipboard('draftedCommunication')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm">
-                        Copy to Clipboard
-                    </button>
-                    <button onclick="closeModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded text-sm">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-
-    </div>
-    
-    <script type="module" src="script.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <script src="index.js"></script> 
 
 </body>
 </html>

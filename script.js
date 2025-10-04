@@ -11,7 +11,6 @@ import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChil
 // ====================================================================
 
 const firebaseConfig = {
-    // 🛑 YOUR PROVIDED API KEYS & CONFIG 🛑
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8", 
     authDomain: "the-academic-care.firebaseapp.com",
     databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", 
@@ -46,7 +45,7 @@ async function initializeAppAndAuth() {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId}`; 
+                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${user.isAnonymous ? 'Anonymous' : 'Password'})`; 
                 checkLoginStatus();
             } else {
                 currentUserId = null;
@@ -80,6 +79,15 @@ window.showLogin = function () {
     document.getElementById('dashboardView').classList.add('hidden'); 
 }
 
+// FIX: Ensures the registration page is shown correctly
+window.showRegister = function () {
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('registerError').textContent = '';
+    document.getElementById('initialView').classList.add('hidden');
+    document.getElementById('registerView').classList.remove('hidden');
+    document.getElementById('dashboardView').classList.add('hidden'); 
+}
+
 window.showDashboard = function (isAdmin) {
     document.getElementById('initialView').classList.add('hidden');
     document.getElementById('registerView').classList.add('hidden');
@@ -102,8 +110,13 @@ async function checkLoginStatus() {
 
     if (loginId) {
         if (isAdmin) {
-            await initializeAdminPanel();
-            showDashboard(true);
+            if (auth.currentUser && auth.currentUser.email) {
+                await initializeAdminPanel();
+                showDashboard(true);
+            } else {
+                 // Force Admin re-login if only anonymous auth remains
+                logout(); 
+            }
         } else {
             const studentSnapshot = await get(getStudentRef(loginId));
             
@@ -183,6 +196,11 @@ async function handleStudentLogin(studentId) {
         errorElement.textContent = 'Registration pending admin approval.';
         return;
     }
+    
+    if (data.id !== studentId) {
+        errorElement.textContent = 'Security check failed. Invalid login data.';
+        return;
+    }
 
     currentStudentData = { id: studentId, ...data };
     localStorage.setItem('appLoginId', studentId);
@@ -196,15 +214,19 @@ window.logout = function () {
     localStorage.removeItem('isAdmin');
     currentStudentData = null;
     currentUserId = null;
-    signOut(auth); 
+    
+    signOut(auth).then(() => {
+        signInAnonymously(auth); 
+    });
+    
     showLogin();
 }
 
-// FIX: Registration function relies heavily on the final security rules to pass
+// Registration logic remains robust
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
-    const studentClass = document.getElementById('regClass').value.trim();
+    const studentClass = document.getElementById('regClass').value.trim().padStart(2, '0');
     const studentRoll = document.getElementById('regRoll').value.trim(); 
     const errorElement = document.getElementById('registerError');
     errorElement.textContent = '';
@@ -216,8 +238,7 @@ window.registerStudent = async function () {
     
     const rollString = studentRoll.padStart(3, '0');
     const year = new Date().getFullYear().toString().substring(2);
-    const classId = studentClass.padStart(2, '0');
-    const newId = `S${year}${classId}${rollString}`; 
+    const newId = `S${year}${studentClass}${rollString}`; 
 
     try {
         const existingStudent = await get(getStudentRef(newId));
@@ -226,7 +247,6 @@ window.registerStudent = async function () {
             return;
         }
 
-        // CRITICAL: Must include status: 'pending' for the security rule to pass
         await set(getStudentRef(newId), {
             name: name,
             guardianPhone: guardianPhone,
@@ -251,8 +271,8 @@ window.registerStudent = async function () {
 // ====================================================================
 
 async function initializeAdminPanel() {
-    if (!auth.currentUser || !localStorage.getItem('isAdmin')) {
-        console.error("Admin not fully authenticated or local storage status is missing.");
+    if (!auth.currentUser || localStorage.getItem('isAdmin') !== 'true') {
+        console.error("Admin not authenticated.");
         return;
     }
 
@@ -265,13 +285,22 @@ async function initializeAdminPanel() {
         renderPendingStudents(pendingDocs);
     });
 
-    // Listener for approved students (populates the selector) - FIX FOR ADMIN LIST
+    // Listener for approved students (populates the selector) 
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('approved')), (snapshot) => {
         allApprovedStudents = [];
         snapshot.forEach(childSnapshot => {
             allApprovedStudents.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
         renderStudentSelector(allApprovedStudents);
+    });
+    
+    // Listener for Break Requests
+    onValue(ref(db, `${RTDB_ROOT_PATH}/breakRequests`), (snapshot) => {
+        const requests = [];
+        snapshot.forEach(childSnapshot => {
+            requests.push({ studentId: childSnapshot.key, ...childSnapshot.val() });
+        });
+        renderBreakRequests(requests);
     });
 }
 
@@ -282,9 +311,10 @@ window.approveStudent = async function (studentId) {
             approvedBy: auth.currentUser.uid, 
             approvedAt: Date.now()
         });
+        alert(`Student ${studentId} approved.`);
     } catch (e) {
         console.error("Error approving student:", e);
-        alert(`ERROR: Failed to approve student. Check Admin write permissions in Firebase rules. Error: ${e.message}`);
+        alert(`ERROR: Failed to approve student. Check Admin write permissions. Error: ${e.message}`);
     }
 }
 
@@ -303,31 +333,53 @@ window.markPaid = async function (studentId, monthKey, method) {
         
     } catch (e) {
         console.error("Error recording payment:", e);
-        alert(`ERROR: Failed to record payment for ${monthKey}. Please check Firebase write permissions for the Admin. Details: ${e.message}`);
+        alert(`ERROR: Failed to record payment for ${monthKey}. Details: ${e.message}`);
     }
 }
 
-// FIX: Robust function to load monthly fees with error handling for the Admin panel
+// FIX: Correctly targets the 'monthlyFees' container in the HTML
 window.loadMonthlyFees = function () {
     const studentId = document.getElementById('studentSelector').value;
-    const feeContainer = document.getElementById('adminFeeManagementList');
+    const feeContainer = document.getElementById('monthlyFees'); 
+    const commButtonContainer = document.getElementById('draftCommButton');
     
     if (!studentId) {
         feeContainer.innerHTML = '<p class="text-gray-500">Select a student to view fees.</p>';
+        commButtonContainer.innerHTML = '';
         return;
     }
 
     feeContainer.innerHTML = '<p class="text-gray-500">Loading fee data...</p>';
+    
+    commButtonContainer.innerHTML = `
+        <button onclick="draftCommunication('${studentId}')" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded text-sm">
+            Draft Fee Communication (AI)
+        </button>
+    `;
 
     // Listener for monthly fees for the selected student
     onValue(getFeesRef(studentId), (snapshot) => {
         const fees = snapshot.val() || {};
+        // Renders data into the correct 'monthlyFees' container
         renderAdminFeeManagement(fees, studentId, feeContainer);
     }, (error) => {
         console.error("Failed to load monthly fees for Admin:", error);
-        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules. Error: ${error.message}</p>`;
+        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Error: ${error.message}</p>`;
     });
 };
+
+window.approveBreak = async function(studentId) {
+    if (!confirm(`Confirm approval of break request for ${studentId}?`)) return;
+
+    try {
+        // Remove the break request entry
+        await remove(getBreakRequestRef(studentId));
+        alert(`Break request for ${studentId} approved and removed from the list.`);
+    } catch (e) {
+        console.error("Error approving break:", e);
+        alert(`ERROR: Failed to approve break. Details: ${e.message}`);
+    }
+}
 
 // ====================================================================
 // --- Student Panel Functions ---
@@ -337,11 +389,12 @@ async function initializeStudentPanel(studentData) {
     document.getElementById('studentIdDisplay').textContent = studentData.id; 
     document.getElementById('studentStatus').textContent = studentData.status;
     document.getElementById('studentClass').textContent = studentData.class;
+    
+    document.getElementById('welcomeHeader').textContent = `Welcome, ${studentData.name}!`;
 
     const feeContainer = document.getElementById('feeStatusList');
     feeContainer.innerHTML = '<p>Loading fee data...</p>';
 
-    // Listener for monthly fees for the logged-in student
     onValue(getFeesRef(studentData.id), (snapshot) => {
         const fees = snapshot.val() || {};
         renderFeeStatus(fees, feeContainer);
@@ -349,10 +402,16 @@ async function initializeStudentPanel(studentData) {
         console.error("Failed to load monthly fees for Student:", error);
         feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules. Error: ${error.message}</p>`;
     });
+    
+    document.getElementById('breakRequestArea').innerHTML = `
+        <button onclick="requestBreak('${studentData.id}')" class="w-full break-btn font-bold py-2 px-4 rounded mt-2">
+            Request Break for Next Month
+        </button>
+    `;
 }
 
 window.requestBreak = async function (studentId) {
-    if (!confirm("Are you sure you want to send a break request? The admin will review this.")) {
+    if (!confirm("Are you sure you want to send a break request? This will be reviewed by the admin.")) {
         return;
     }
     
@@ -373,8 +432,99 @@ window.requestBreak = async function (studentId) {
         
     } catch (e) {
         console.error("Break request failed: ", e);
-        alert(`ERROR: Failed to submit break request. Please check Firebase write permissions for the Student. Details: ${e.message}`);
+        alert(`ERROR: Failed to submit break request. Details: ${e.message}`);
     }
+}
+
+// ====================================================================
+// --- Gemini AI Functions (Simulated based on Policy Context) ---
+// ====================================================================
+
+const ACADEMIC_CARE_POLICY = {
+    fee: "BDT 2,000",
+    deadline: "5th day of the current month",
+    late_fee: "BDT 100 (after the 10th)",
+    payment_methods: "Cash (to Admin), Bkash (017-xxxx-xxxx), or Nagad (018-xxxx-xxxx)",
+    break_policy: "Submit a break request before the 25th day of the current month for the next month. Admin approval required.",
+    year: "2024"
+};
+
+window.handleStudentQuery = async function() {
+    const query = document.getElementById('geminiQuery').value.toLowerCase().trim();
+    const responseElement = document.getElementById('geminiResponse');
+    const loader = document.getElementById('geminiLoader');
+    
+    if (!query) {
+        responseElement.textContent = "Please enter a question to ask the assistant.";
+        return;
+    }
+
+    loader.classList.remove('hidden');
+    responseElement.textContent = "Analyzing query...";
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    let response = "I'm sorry, I couldn't find a specific answer for that. Please try asking about **fees**, **payment methods**, **deadlines**, or the **break policy**.";
+
+    if (query.includes('fee') || query.includes('amount') || query.includes('cost')) {
+        response = `The standard monthly tuition fee is **${ACADEMIC_CARE_POLICY.fee}**. Fees are due by the **${ACADEMIC_CARE_POLICY.deadline}**.`;
+    } else if (query.includes('payment') || query.includes('pay') || query.includes('method')) {
+        response = `You can pay using **${ACADEMIC_CARE_POLICY.payment_methods}**. Please ensure you get a confirmation receipt from the Admin for Cash payments.`;
+    } else if (query.includes('break') || query.includes('stop') || query.includes('leave')) {
+        response = `Our **break policy** states you must submit a **Break Request** through the portal *before* the **25th day of the current month** to take a break in the *following* month. Admin approval is mandatory.`;
+    } else if (query.includes('status') && currentStudentData) {
+        const fees = currentStudentData.fees || {};
+        const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid')
+                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+        
+        if (unpaidMonths.length > 0) {
+            response = `Your current status is **${currentStudentData.status}**. You appear to have unpaid fees for: **${unpaidMonths.join(', ')}**. Please prioritize settling these.`;
+        } else {
+            response = `Your current status is **${currentStudentData.status}**. Great news! Your fee record seems up-to-date for the currently tracked months.`;
+        }
+    }
+    
+    responseElement.innerHTML = response;
+    loader.classList.add('hidden');
+}
+
+window.draftCommunication = async function(studentId) {
+    const student = allApprovedStudents.find(s => s.id === studentId);
+    if (!student) return;
+
+    openModal();
+    const draftArea = document.getElementById('draftedCommunication');
+    const loader = document.getElementById('communicationLoader');
+    loader.classList.remove('hidden');
+    draftArea.value = 'Analyzing student data and drafting message...';
+
+    const feeSnapshot = await get(getFeesRef(studentId));
+    const fees = feeSnapshot.val() || {};
+
+    const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid')
+                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+
+    const breakRequestSnapshot = await get(getBreakRequestRef(studentId));
+    const breakRequest = breakRequestSnapshot.val();
+
+    let message;
+
+    if (unpaidMonths.length > 0) {
+        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
+        message += `This is a friendly reminder from The Academic Care regarding outstanding tuition fees. We show the following months are currently UNPAID: ${unpaidMonths.join(', ')}.\n\n`;
+        message += `Please settle the fee of ${ACADEMIC_CARE_POLICY.fee} per month immediately to avoid disruption. Payment methods: ${ACADEMIC_CARE_POLICY.payment_methods}.\n\n`;
+        message += `Thank you for your cooperation.`;
+    } else {
+        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
+        message += `Thank you for your prompt payment! Our records show the student's fees are completely up-to-date.\n\n`;
+        if (breakRequest) {
+            message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth}. Please review and approve/reject it.\n\n`;
+        }
+        message += `We appreciate your commitment to ${student.name}'s education.`;
+    }
+
+    loader.classList.add('hidden');
+    draftArea.value = message;
 }
 
 // ====================================================================
@@ -393,7 +543,7 @@ function renderPendingStudents(pendingStudents) {
     pendingCountSpan.textContent = `(${pendingStudents.length})`;
 
     if (pendingStudents.length === 0) {
-        ul.innerHTML = '<p class="text-gray-500">No pending students</p>';
+        ul.innerHTML = '<p class="text-gray-500 text-sm p-3">No pending students</p>';
         return;
     }
 
@@ -408,6 +558,34 @@ function renderPendingStudents(pendingStudents) {
             <button class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm" onclick="approveStudent('${data.id}')">Approve</button>
         `;
         ul.appendChild(li);
+    });
+}
+
+function renderBreakRequests(requests) {
+    const container = document.getElementById('breakRequestsList');
+    if (!container) return;
+
+    container.innerHTML = ''; 
+    document.getElementById('breakCount').textContent = `(${requests.length})`;
+
+    if (requests.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-sm p-3">No pending break requests.</p>';
+        return;
+    }
+
+    requests.forEach(req => {
+        const div = document.createElement('div');
+        div.classList.add('flex', 'justify-between', 'items-center', 'bg-white', 'p-2', 'mb-2', 'rounded', 'shadow-sm', 'text-sm');
+        div.innerHTML = `
+            <div>
+                <strong>${req.studentName}</strong> (${req.studentId})<br>
+                <small class="text-indigo-600">Request for: ${req.requestedForMonth.charAt(0).toUpperCase() + req.requestedForMonth.slice(1)}</small>
+            </div>
+            <button class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-xs" onclick="approveBreak('${req.studentId}')">
+                Approve Break
+            </button>
+        `;
+        container.appendChild(div);
     });
 }
 
@@ -426,23 +604,32 @@ function renderStudentSelector(students) {
         selector.appendChild(option);
     });
 
-    // If an ID was selected, reload the monthly fees for the admin panel
-    if (selectedId) {
+    if (selectedId && document.getElementById('dashboardView').classList.contains('hidden') === false) {
         loadMonthlyFees();
     }
 }
 
+// UX ENHANCEMENT: Clearer status colors and current month highlight
 function renderFeeStatus(fees, container) {
     container.innerHTML = ''; 
     const monthKeys = getMonthKeys();
+    const today = new Date();
+    const currentMonth = today.toLocaleString('en-us', { month: 'long' }).toLowerCase();
 
     monthKeys.forEach(month => {
         const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
+        const isCurrentMonth = month === currentMonth;
+
         const li = document.createElement('li');
-        li.classList.add('flex', 'justify-between', 'items-center', 'py-1');
+        li.classList.add('flex', 'justify-between', 'items-center', 'py-2', 'border-b', 'border-gray-200');
+        
+        if (isCurrentMonth) {
+            li.classList.add('bg-indigo-100', 'font-semibold', 'rounded', 'px-3');
+        }
+        
         li.innerHTML = `
-            <span>${month.charAt(0).toUpperCase() + month.slice(1)}: **${status}**</span>
-            <span class="${status === 'paid' ? 'text-green-600' : 'text-red-600'} text-sm font-bold">${status.toUpperCase()}</span>
+            <span class="text-gray-800">${month.charAt(0).toUpperCase() + month.slice(1)} ${isCurrentMonth ? '✨' : ''}</span>
+            <span class="px-3 py-1 rounded-full text-xs status-${status}">${status.toUpperCase()}</span>
         `;
         container.appendChild(li);
     });
@@ -454,12 +641,12 @@ function renderAdminFeeManagement(fees, studentId, container) {
 
     monthKeys.forEach(month => {
         const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
-        const paymentInfo = status === 'paid' ? `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()})` : '';
+        const paymentInfo = status === 'paid' ? `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()} via ${fees[month].paymentMethod})` : '';
 
         const li = document.createElement('li');
-        li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm');
+        li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm', 'border-l-4', status === 'paid' ? 'border-green-500' : 'border-red-500');
         li.innerHTML = `
-            <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="${status === 'paid' ? 'text-green-600' : 'text-red-600'}">${status.toUpperCase()}</span></div>
+            <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="status-${status}">${status.toUpperCase()}</span></div>
             <small class="text-gray-500">${paymentInfo}</small>
             <div class="mt-2 space-x-2">
                 ${status === 'unpaid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>` : ''}
@@ -470,10 +657,37 @@ function renderAdminFeeManagement(fees, studentId, container) {
 }
 
 window.openPaymentModal = function(studentId, monthKey) {
-    const method = prompt(`Mark ${monthKey} as paid for ${studentId}. Enter Payment Method (e.g., Cash, Bkash):`);
+    const method = prompt(`Mark ${monthKey} as paid for ${studentId}. Enter Payment Method (e.g., Cash, Bkash, Nagad):`);
     if (method) {
         markPaid(studentId, monthKey, method);
     }
 };
+
+// UX ENHANCEMENT: Collapsible panel logic
+window.toggleCollapsible = function(id) {
+    const element = document.getElementById(id);
+    if (element.style.maxHeight) {
+        element.style.maxHeight = null;
+    } else {
+        // ScrollHeight gives the required height of the content
+        element.style.maxHeight = element.scrollHeight + "px";
+    }
+}
+
+window.openModal = function() {
+    document.getElementById('communicationModal').classList.remove('hidden');
+}
+
+window.closeModal = function() {
+    document.getElementById('communicationModal').classList.add('hidden');
+}
+
+window.copyToClipboard = function(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999); 
+    navigator.clipboard.writeText(element.value);
+    alert('Message copied to clipboard!');
+}
 
 window.onload = initializeAppAndAuth;

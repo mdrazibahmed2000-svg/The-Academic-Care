@@ -53,7 +53,7 @@ const breakMessage = document.getElementById("breakMessage");
 
 // ADMIN FIELDS
 const pendingStudentsList = document.getElementById("pendingStudents");
-const studentInfoDiv = document.getElementById("studentInfoDiv"); // Renamed to avoid conflict with student panel
+const studentInfoDiv = document.getElementById("studentInfoDiv"); 
 const studentTuitionTableBody = document.getElementById("studentTuitionTable");
 const breakRequestManagementDiv = document.getElementById("breakRequestManagement");
 
@@ -343,7 +343,7 @@ function renderStudentProfile(data) {
     `;
 }
 
-// UPDATED: Future months are now shown as "---" (unrecorded)
+// CORRECTED: Future months are now shown as "---" (unrecorded)
 function renderStudentFeeTable(tuitionStatus) {
     if (!tuitionTableBody) return;
     tuitionTableBody.innerHTML = '';
@@ -416,7 +416,8 @@ async function loadBreakRequestForm(studentId) {
     // 1. Find the index of the last month that was explicitly PAID.
     MONTHS.forEach((month, index) => {
         const data = tuitionStatus[month];
-        if (data && data.paid === true) {
+        // Check for paid OR break status to determine the next required month
+        if (data && (data.paid === true || data.isBreak === true)) {
             lastPaidMonthIndex = index;
         }
     });
@@ -424,7 +425,7 @@ async function loadBreakRequestForm(studentId) {
     // 2. Determine the earliest possible start month for the break.
     let earliestStartMonthIndex = lastPaidMonthIndex + 1;
     
-    // If no payments found, start from January (index 0).
+    // If no payments or breaks found, start from January (index 0).
     if (lastPaidMonthIndex === -1) {
         earliestStartMonthIndex = 0;
     }
@@ -586,7 +587,7 @@ function handleViewStudentDetail(e) {
     loadStudentDetailData(studentID);
 }
 
-// UPDATED: Now includes Break Request Management rendering
+// UPDATED: Renders Break Request Management or "None" status
 function loadStudentDetailData(studentId) {
     const studentRef = ref(db, `students/${studentId}`);
     
@@ -611,6 +612,7 @@ function loadStudentDetailData(studentId) {
         
         if (breakRequest && breakRequest.status === 'pending') {
             if(breakRequestManagementDiv) {
+                // Show management UI for a pending request
                 breakRequestManagementDiv.classList.remove("hidden");
                 breakRequestManagementDiv.innerHTML = `
                     <h4>Pending Break Request:</h4>
@@ -624,10 +626,11 @@ function loadStudentDetailData(studentId) {
                 `;
             }
         } else {
-            // Hide the management section if no pending request exists
+            // Display "None" status if no pending request exists
             if(breakRequestManagementDiv) {
-                breakRequestManagementDiv.classList.add("hidden");
-                breakRequestManagementDiv.innerHTML = '';
+                breakRequestManagementDiv.classList.remove("hidden"); // Keep visible to show the "None" status
+                breakRequestManagementDiv.innerHTML = `<p><strong>Break Request Status:</strong> None</p>`;
+                breakRequestManagementDiv.style.border = 'none'; // Remove the border when just showing 'None'
             }
         }
 
@@ -636,26 +639,37 @@ function loadStudentDetailData(studentId) {
     });
 }
 
-// Renders months in Calendar Order (Jan-Dec) for Admin Panel
+// CRITICAL FIX: Admin Panel displays "---" (Unrecorded) for future months.
 function renderAdminFeeTable(studentId, tuitionStatus) {
     if (!studentTuitionTableBody) return;
     studentTuitionTableBody.innerHTML = "";
 
-    MONTHS.forEach(month => {
-        const data = tuitionStatus[month] || { paid: false, date: null, isBreak: false };
-        let statusText = "Unpaid";
-        let statusClass = "unpaid";
+    const currentDate = new Date();
+    const currentMonthIndex = currentDate.getMonth(); 
 
+    MONTHS.forEach((month, index) => {
+        const data = tuitionStatus[month] || { paid: false, date: null, isBreak: false };
+        let statusText = "---";
+        let statusClass = "unrecorded";
+
+        // Check if the month is currently due (current month or a past month)
+        const isMonthDueOrPast = (index <= currentMonthIndex);
+        
+        // Determine Status and Class
         if (data.paid) {
-            statusText = `Paid (${data.date})`;
+            statusText = `Paid`; 
             statusClass = "paid";
         } else if (data.isBreak) {
-            statusText = `Break (${data.date})`;
+            statusText = `Break`;
             statusClass = "break";
+        } else if (isMonthDueOrPast) {
+            // Month is due (current or past) and is NOT Paid/Break, so it is UNPAID.
+            statusText = "Unpaid";
+            statusClass = "unpaid";
         } else {
-             // For admin, default is unpaid if not paid or break
-             statusText = "Unpaid";
-             statusClass = "unpaid";
+            // Month is in the future. Status remains '---'. (Unrecorded)
+            statusText = "---";
+            statusClass = "unrecorded";
         }
         
         const tr = studentTuitionTableBody.insertRow();
@@ -666,7 +680,7 @@ function renderAdminFeeTable(studentId, tuitionStatus) {
         tdMonth.textContent = month;
         tdStatus.innerHTML = `<span class="${statusClass}">${statusText}</span>`;
         
-        // Define buttons based on status
+        // Action buttons are available only if status is NOT Paid or Break.
         if (data.paid || data.isBreak) {
             tdAction.innerHTML = `<button onclick="window.undoStatus('${studentId}', '${month}')">Undo Status</button>`;
         } else {
@@ -737,7 +751,7 @@ window.undoStatus = async function(studentId, month) {
         console.error("Permission Denied: Admin password authentication required.");
         return;
     }
-    if (confirm(`Are you sure you want to UNDO the status for ${month}? This will revert it to UNPAID.`)) {
+    if (confirm(`Are you sure you want to UNDO the status for ${month}? This will revert it to UNPAID (if month is past/current) or '---' (if month is future).`)) {
         try {
             await update(ref(db, `students/${studentId}/tuitionStatus/${month}`), {
                 paid: false,

@@ -1,49 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Fee Management</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Fee Management</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="container">
-    <h1 id="welcomeHeader">Student Fee Management</h1>
+  <div class="container">
+    <h1 id="welcomeHeader">Student Fee Management</h1>
 
-    <!-- ====================== AUTH PANEL ======================= -->
-    <div id="authCard" class="card">
-      <h2>Login</h2>
-      <input type="text" id="studentIdInput" placeholder="Enter Student ID (for students)">
-      <input type="email" id="adminEmail" placeholder="Admin Email">
-      <input type="password" id="adminPassword" placeholder="Admin Password">
-      <button class="bg-indigo-500 hover:bg-indigo-600" id="loginBtn">Login</button>
-      <p id="authError" style="color:red;"></p>
-    </div>
+        <div id="loginCard" class="page active">
+      <h2>Login</h2>
+      <input type="text" id="idOrRoleInput" placeholder="Enter Approved Student ID or 'admin'">
+      
+            <div id="adminAuthFields" style="display:none;">
+        <input type="email" id="adminEmail" placeholder="Admin Email">
+        <input type="password" id="adminPassword" placeholder="Admin Password">
+      </div>
+      
+      <button class="bg-indigo-500 hover:bg-indigo-600" id="loginBtn">Login</button>
+      <p id="authError" style="color:red;"></p>
+      
+      <p style="text-align: center; margin-top: 15px;">
+        New student? <a href="#" onclick="showRegister()">Register Here</a>
+      </p>
+    </div>
 
-    <!-- ====================== STUDENT PANEL ======================= -->
-    <div id="studentPanel" class="card" style="display:none;">
-      <h2>My Fee Status</h2>
-      <ul id="feeStatusList"></ul>
-      <button id="logoutBtn" class="bg-gray-500 hover:bg-gray-600">Logout</button>
-    </div>
+        <div id="registerCard" class="page hidden">
+      <h2>New Student Registration</h2>
+      <input type="text" id="regName" placeholder="Full Name">
+      <input type="text" id="regClass" placeholder="Class (e.g., 10)">
+      <input type="text" id="regRoll" placeholder="Roll No (e.g., 01)">
+      <input type="text" id="regGuardian" placeholder="Guardian's Name">
+      <button class="bg-green-500 hover:bg-green-600" onclick="registerStudent()">Submit Registration</button>
+      <p style="text-align: center; margin-top: 15px;">
+        Already registered? <a href="#" onclick="showLogin()">Go to Login</a>
+      </p>
+    </div>
 
-    <!-- ====================== ADMIN PANEL ======================= -->
-    <div id="adminPanel" class="card" style="display:none;">
-      <h2>Admin Dashboard</h2>
-      <div>
-        <label>Select Approved Student</label>
-        <select id="studentSelect"></select>
-      </div>
-      <h3>Monthly Payments</h3>
-      <ul id="monthlyFees"></ul>
-      <button id="logoutAdminBtn" class="bg-gray-500 hover:bg-gray-600">Logout</button>
-    </div>
-  </div>
+        <div id="studentDashboard" class="page hidden">
+      <h2 id="studentName">My Fee Status</h2>
+      <div id="studentFees"></div>
+      <button id="logoutBtn" class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
+    </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
-  <script src="app.js"></script>
+        <div id="adminPanel" class="page hidden">
+      <h2>Admin Dashboard</h2>
+      <h3>Pending Approvals</h3>
+      <ul id="pendingStudents"></ul>
+      
+      <h3>Approved Students List</h3>
+      <ul id="approvedStudents"></ul>
+      
+      <div>
+        <label>Select Approved Student to Manage Fees</label>
+        <select id="studentSelector" onchange="loadMonthlyFees()"></select>
+      </div>
+      
+      <h3>Monthly Payments</h3>
+      <ul id="monthlyFees"></ul>
+      <button id="logoutAdminBtn" class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

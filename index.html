@@ -1,172 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Student Fee Management</title>
-<style>
-/* ===================== GLOBAL STYLES ===================== */
-* { box-sizing: border-box; }
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6fa;
-  color: #333;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
-h2 { text-align: center; margin-bottom: 1rem; }
-input[type=text], input[type=password], input[type=email], select {
-  width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-}
-input:focus { outline: none; border-color: #6366f1; }
-button {
-  width: 100%;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  background: #6366f1;
-  color: white;
-  margin-top: 8px;
-}
-button:hover { background: #4f46e5; }
-.hidden { display: none !important; }
-p { text-align: center; margin-top: 8px; }
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 350px;
-  margin: 10px;
-}
-/* Student/Admin panels */
-#studentPanel, #adminPanel { text-align: center; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Fee Management</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="card" id="authCard">
-  <h2>Login</h2>
-  <input type="text" id="studentIdInput" placeholder="Student ID (for students)" />
-  <input type="email" id="adminEmail" placeholder="Admin Email (for admin)" />
-  <input type="password" id="adminPassword" placeholder="Admin Password (for admin)" />
-  <button onclick="loginUser()">Login</button>
-  <p id="authError" style="color:red;"></p>
-  <p>Or <a href="#" onclick="toggleRegister()">Register as new student</a></p>
-</div>
+    <div class="container">
+        <h1 id="welcomeHeader">Student Fee Management</h1>
 
-<div class="card hidden" id="registerCard">
-  <h2>Student Registration</h2>
-  <input type="text" id="regName" placeholder="Full Name" />
-  <input type="text" id="regClass" placeholder="Class" />
-  <input type="text" id="regRoll" placeholder="Roll Number" />
-  <input type="text" id="regGuardian" placeholder="Guardian Name" />
-  <button onclick="registerStudent()">Register</button>
-  <p><a href="#" onclick="toggleRegister()">Back to Login</a></p>
-</div>
+        <div id="login-page" class="page active">
+            <h2>Login</h2>
+            <input type="text" id="studentId" placeholder="Enter Student ID or type 'admin'">
+            
+            <div id="adminFields" class="hidden">
+                <input type="email" id="adminEmail" placeholder="Admin Email">
+                <input type="password" id="adminPassword" placeholder="Admin Password">
+            </div>
+            
+            <button class="bg-indigo-500 hover:bg-indigo-600" onclick="login()">Login</button>
+            <p id="loginError" style="color:red; text-align:center;"></p>
+            
+            <p style="text-align:center;margin-top:10px;">
+                New student? <a href="#" onclick="showRegister()">Register here</a>
+            </p>
+        </div>
 
-<div class="card hidden" id="studentPanel">
-  <h2>Welcome Student</h2>
-  <p id="studentName"></p>
-  <button onclick="logout()">Logout</button>
-</div>
+        <div id="register-page" class="page hidden">
+            <h2>Student Registration</h2>
+            <input type="text" id="regName" placeholder="Full Name">
+            <input type="text" id="regClass" placeholder="Class (e.g., 8, 9, 10)">
+            <input type="text" id="regRoll" placeholder="Roll Number">
+            <input type="text" id="regGuardian" placeholder="Guardian Name">
+            
+            <button class="bg-green-500 hover:bg-green-600" onclick="registerStudent()">Register</button>
+            <button class="bg-gray-500 hover:bg-gray-600" onclick="showLogin()">Back to Login</button>
+        </div>
 
-<div class="card hidden" id="adminPanel">
-  <h2>Admin Dashboard</h2>
-  <p>Manage Students & Fees</p>
-  <button onclick="logout()">Logout</button>
-</div>
+        <div id="dashboard" class="page hidden">
+            <h2 id="studentName">Student Dashboard</h2>
+            <h3>Monthly Fee Status</h3>
+            <div id="studentFees">
+                <p style="text-align: center;">Loading fee data...</p>
+            </div>
+            <button class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
+        </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        <div id="admin-panel" class="page hidden">
+            <h2>Admin Dashboard</h2>
 
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
-  authDomain: "the-academic-care.firebaseapp.com",
-  databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "the-academic-care",
-  storageBucket: "the-academic-care.firebasestorage.app",
-  messagingSenderId: "728354914429",
-  appId: "1:728354914429:web:9fe92ca6476baf6af2f114"
-};
+            <h3>Pending Students</h3>
+            <ul id="pendingStudents">
+                <li>No pending students.</li>
+            </ul>
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+            <h3>Approved Students</h3>
+            <ul id="approvedStudents">
+                <li>No approved students.</li>
+            </ul>
 
-const authCard = document.getElementById("authCard");
-const registerCard = document.getElementById("registerCard");
-const studentPanel = document.getElementById("studentPanel");
-const adminPanel = document.getElementById("adminPanel");
-const authError = document.getElementById("authError");
-const studentName = document.getElementById("studentName");
+            <h3 style="margin-bottom: 15px;">Fee Management</h3>
+            <select id="studentSelector" onchange="loadMonthlyFees()">
+                <option value="">Select Student to Manage Fees</option>
+            </select>
+            
+            <ul id="monthlyFees" style="margin-top: 15px;">
+                <li>Select a student to view monthly fees.</li>
+            </ul>
+            
+            <button class="bg-gray-500 hover:bg-gray-600" onclick="logout()">Logout</button>
+        </div>
 
-function toggleRegister() {
-  authCard.classList.toggle("hidden");
-  registerCard.classList.toggle("hidden");
-  authError.textContent = "";
-}
+    </div>
 
-window.registerStudent = function() {
-  const name = document.getElementById("regName").value.trim();
-  const cls = document.getElementById("regClass").value.trim();
-  const roll = document.getElementById("regRoll").value.trim();
-  const guardian = document.getElementById("regGuardian").value.trim();
-  if(!name || !cls || !roll || !guardian) return alert("Fill all fields!");
-  const year = new Date().getFullYear();
-  const id = "S"+year+cls.padStart(2,'0')+roll.padStart(2,'0');
-  set(ref(db, "students/" + id), { name, class: cls, roll, guardian, status:"pending" })
-    .then(()=>{ alert("✅ Registered! ID: "+id); toggleRegister(); })
-    .catch(err=>alert("❌ "+err.message));
-};
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 
-window.loginUser = function() {
-  const id = document.getElementById("studentIdInput").value.trim();
-  const email = document.getElementById("adminEmail").value.trim();
-  const pass = document.getElementById("adminPassword").value.trim();
-  authError.textContent = "";
-  if(!id) { authError.textContent="Enter Student ID or 'admin'"; return; }
-
-  if(id.toLowerCase()==="admin"){
-    if(!email||!pass){ authError.textContent="Enter admin email and password!"; return; }
-    signInWithEmailAndPassword(auth,email,pass)
-      .then(()=>{ authCard.classList.add("hidden"); adminPanel.classList.remove("hidden"); alert("✅ Admin logged in!"); })
-      .catch(err=>authError.textContent=err.message);
-    return;
-  }
-
-  get(child(ref(db),"students/"+id))
-    .then(snapshot=>{
-      if(!snapshot.exists()){ authError.textContent="❌ Invalid Student ID!"; return; }
-      const data = snapshot.val();
-      if(data.status!=="approved"){ authError.textContent="⏳ Registration pending approval!"; return; }
-      studentName.textContent = `${data.name} (Class ${data.class}, Roll ${data.roll})`;
-      authCard.classList.add("hidden"); studentPanel.classList.remove("hidden");
-    }).catch(err=>authError.textContent=err.message);
-};
-
-window.logout = function() {
-  authCard.classList.remove("hidden");
-  studentPanel.classList.add("hidden");
-  adminPanel.classList.add("hidden");
-  document.getElementById("studentIdInput").value="";
-  document.getElementById("adminEmail").value="";
-  document.getElementById("adminPassword").value="";
-};
-</script>
+    <script src="app.js"></script>
+    
 </body>
 </html>

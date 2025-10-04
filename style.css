@@ -1,3 +1,4 @@
+/* General Styles */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -6,7 +7,7 @@ body {
 }
 
 .container {
-    max-width: 400px;
+    max-width: 500px;
     margin: 30px auto;
     padding: 20px;
     background: #fff;
@@ -15,12 +16,13 @@ body {
 }
 
 h1, h2, h3 { text-align: center; color: #333; }
-
 input, button, select {
     width: 100%;
     padding: 10px;
-    margin: 10px 0;
+    margin: 8px 0;
     box-sizing: border-box;
+    border-radius: 5px;
+    border: 1px solid #ccc;
 }
 
 button {
@@ -28,20 +30,49 @@ button {
     color: white;
     border: none;
     cursor: pointer;
-    border-radius: 5px;
 }
 
 button:hover { background-color: #45a049; }
 
 .hidden { display: none; }
-
 #message { text-align: center; color: red; margin-top: 10px; }
 
-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
-
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+th, td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
 .paid { background-color: #4CAF50; color: white; padding: 5px; border-radius: 5px; }
 .unpaid { background-color: #f44336; color: white; padding: 5px; border-radius: 5px; }
 
+/* Tabs */
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+.tabBtn {
+    background-color: #eee;
+    border: none;
+    padding: 10px 15px;
+    margin: 2px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+.tabBtn.active { background-color: #4CAF50; color: white; }
+.tabContent { margin-top: 20px; }
+.tabContent.hidden { display: none; }
+
+/* Lists */
 ul { list-style-type: none; padding: 0; }
-ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; }
+ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; cursor: pointer; border-radius: 5px; }
+ul li button { margin-left: 10px; padding: 5px 10px; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container { width: 90%; padding: 15px; }
+    .tabs { flex-direction: column; }
+    .tabBtn { width: 100%; margin-bottom: 5px; }
+}

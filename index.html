@@ -1,95 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Academic Care Portal</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Academic Care</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100">
+<body>
 
-  <div class="container mx-auto p-6 max-w-3xl">
-
-    <h1 class="text-3xl font-bold text-indigo-600 text-center mb-6">
-      Academic Care Portal
-    </h1>
-
-    <!-- Login Page -->
-    <div id="login-page" class="card">
-      <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
-      <input id="studentId" type="text" placeholder="Student ID or admin" class="input mb-2" />
-      <p id="loginError" class="text-red-600 text-sm mb-2"></p>
-      <button onclick="login()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white w-full mb-2">Login</button>
-      <button onclick="showRegister()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Register New Student</button>
+<div class="container" id="loginContainer">
+    <h1>The Academic Care</h1>
+    <input type="text" id="userID" placeholder="Enter Student ID or 'admin'">
+    
+    <!-- Admin login fields -->
+    <div id="adminLoginFields" class="hidden">
+        <input type="email" id="adminEmail" placeholder="Admin Email">
+        <input type="password" id="adminPassword" placeholder="Admin Password">
     </div>
+    
+    <button id="loginBtn">Login</button>
+    <button id="applyBtn">Apply for Registration</button>
+    <div id="message"></div>
+</div>
 
-    <!-- Register Page -->
-    <div id="register-page" class="card hidden">
-      <h2 class="text-xl font-semibold mb-4 text-center">Student Registration</h2>
-      <input id="regName" type="text" placeholder="Full Name" class="input mb-2" />
-      <input id="regClass" type="number" placeholder="Class" class="input mb-2" />
-      <input id="regRoll" type="number" placeholder="Roll" class="input mb-2" />
-      <input id="regGuardian" type="text" placeholder="Guardian Name" class="input mb-2" />
-      <button onclick="registerStudent()" class="btn bg-green-500 hover:bg-green-600 text-white w-full mb-2">Submit</button>
-      <button onclick="showLogin()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Back to Login</button>
+<!-- Registration -->
+<div class="container hidden" id="registrationContainer">
+    <h2>Student Registration</h2>
+    <form id="registrationForm">
+        <input type="text" id="name" placeholder="Student Name" required>
+        <input type="text" id="class" placeholder="Class" required>
+        <input type="text" id="roll" placeholder="Roll" required>
+        <input type="text" id="guardian" placeholder="Guardian Number" required>
+        <button type="submit">Submit Registration</button>
+    </form>
+    <button id="backToLogin">Back to Login</button>
+    <div id="studentIDDisplay"></div>
+</div>
+
+<!-- Student Panel -->
+<div class="container hidden" id="studentPanel">
+    <h1>The Academic Care</h1>
+    <p>Academic Year: 2025</p>
+    <button id="profileBtn">My Profile</button>
+    <button id="tuitionBtn">Tuition Fee Status</button>
+    <button id="breakBtn">Request Break</button>
+
+    <div id="profile" class="hidden"></div>
+    <div id="tuition" class="hidden">
+        <table id="tuitionTable"></table>
     </div>
-
-    <!-- Student Dashboard -->
-    <div id="dashboard" class="hidden card">
-      <button onclick="logout()" class="absolute top-4 right-6 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded">Logout</button>
-      <h2 id="studentName" class="text-xl font-semibold mb-4 text-center"></h2>
-      <div id="studentFees" class="text-sm"></div>
+    <div id="break" class="hidden">
+        <input type="number" id="breakMonths" placeholder="Number of months">
+        <button id="requestBreakBtn">Request Break</button>
+        <div id="breakMessage"></div>
     </div>
+</div>
 
-    <div id="adminPanel" class="container hidden">
+<!-- Admin Panel -->
+<div class="container hidden" id="adminPanel">
     <h1>Admin Panel</h1>
-
-    <!-- Tabs -->
     <div class="tabs">
-        <button class="tabBtn" data-tab="pending">Pending Students</button>
+        <button class="tabBtn active" data-tab="pending">Pending Students</button>
         <button class="tabBtn" data-tab="class07">Class 07</button>
         <button class="tabBtn" data-tab="class08">Class 08</button>
         <button class="tabBtn" data-tab="class09">Class 09</button>
-        <!-- Add more class tabs as needed -->
     </div>
 
-    <!-- Tab contents -->
     <div id="pending" class="tabContent">
         <h3>Pending Students</h3>
         <ul id="pendingStudents"></ul>
     </div>
 
-    <div id="class07" class="tabContent hidden">
-        <h3>Class 07</h3>
-        <ul id="class07Students"></ul>
-    </div>
-    <div id="class08" class="tabContent hidden">
-        <h3>Class 08</h3>
-        <ul id="class08Students"></ul>
-    </div>
-    <div id="class09" class="tabContent hidden">
-        <h3>Class 09</h3>
-        <ul id="class09Students"></ul>
-    </div>
+    <div id="class07" class="tabContent hidden"><ul id="class07Students"></ul></div>
+    <div id="class08" class="tabContent hidden"><ul id="class08Students"></ul></div>
+    <div id="class09" class="tabContent hidden"><ul id="class09Students"></ul></div>
 
     <div id="studentDetail" class="tabContent hidden">
         <h3>Student Details</h3>
         <div id="studentInfo"></div>
         <table>
-            <thead>
-                <tr><th>Month</th><th>Status</th><th>Action</th></tr>
-            </thead>
+            <thead><tr><th>Month</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="studentTuitionTable"></tbody>
         </table>
     </div>
 </div>
 
-
-  </div>
-
-  <script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>

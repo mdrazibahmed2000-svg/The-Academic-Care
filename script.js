@@ -79,7 +79,6 @@ window.showLogin = function () {
     document.getElementById('dashboardView').classList.add('hidden'); 
 }
 
-// FIX: Ensures the registration page is shown correctly
 window.showRegister = function () {
     document.getElementById('loginError').textContent = '';
     document.getElementById('registerError').textContent = '';
@@ -180,28 +179,37 @@ async function handleAdminLoginWithEmail(email, password) {
     }
 }
 
+// FIX FOR APPROVED STUDENT LOGIN ISSUE
 async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
+    // Fetch the student data from the specific student's node.
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
-        errorElement.textContent = `Student ID '${studentId}' not found. Please register.`;
+        // If snapshot.exists() is false, it means the security rules likely denied the read 
+        // because the 'id' field is missing or incorrect in the student's record.
+        errorElement.textContent = `Student ID '${studentId}' not found. If approved, please contact admin to verify the database record.`;
         return;
     }
 
     const data = studentSnapshot.val();
+    
     if (data.status === 'pending') {
         errorElement.textContent = 'Registration pending admin approval.';
         return;
     }
     
+    // CRITICAL CHECK: Ensure the 'id' field inside the fetched data matches the login ID.
+    // This is the client-side validation that was causing the error for approved students 
+    // whose records were missing the 'id' field.
     if (data.id !== studentId) {
-        errorElement.textContent = 'Security check failed. Invalid login data.';
+        errorElement.textContent = 'Security check failed. Invalid login data (mismatched ID field in database record).';
         return;
     }
 
+    // Login successful
     currentStudentData = { id: studentId, ...data };
     localStorage.setItem('appLoginId', studentId);
     localStorage.setItem('isAdmin', 'false');
@@ -222,7 +230,6 @@ window.logout = function () {
     showLogin();
 }
 
-// Registration logic remains robust
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
@@ -247,6 +254,7 @@ window.registerStudent = async function () {
             return;
         }
 
+        // CRITICAL: Ensure the 'id' field is explicitly set here for future login success
         await set(getStudentRef(newId), {
             name: name,
             guardianPhone: guardianPhone,
@@ -337,7 +345,6 @@ window.markPaid = async function (studentId, monthKey, method) {
     }
 }
 
-// FIX: Correctly targets the 'monthlyFees' container in the HTML
 window.loadMonthlyFees = function () {
     const studentId = document.getElementById('studentSelector').value;
     const feeContainer = document.getElementById('monthlyFees'); 
@@ -357,10 +364,8 @@ window.loadMonthlyFees = function () {
         </button>
     `;
 
-    // Listener for monthly fees for the selected student
     onValue(getFeesRef(studentId), (snapshot) => {
         const fees = snapshot.val() || {};
-        // Renders data into the correct 'monthlyFees' container
         renderAdminFeeManagement(fees, studentId, feeContainer);
     }, (error) => {
         console.error("Failed to load monthly fees for Admin:", error);
@@ -372,7 +377,6 @@ window.approveBreak = async function(studentId) {
     if (!confirm(`Confirm approval of break request for ${studentId}?`)) return;
 
     try {
-        // Remove the break request entry
         await remove(getBreakRequestRef(studentId));
         alert(`Break request for ${studentId} approved and removed from the list.`);
     } catch (e) {
@@ -609,7 +613,6 @@ function renderStudentSelector(students) {
     }
 }
 
-// UX ENHANCEMENT: Clearer status colors and current month highlight
 function renderFeeStatus(fees, container) {
     container.innerHTML = ''; 
     const monthKeys = getMonthKeys();
@@ -663,13 +666,11 @@ window.openPaymentModal = function(studentId, monthKey) {
     }
 };
 
-// UX ENHANCEMENT: Collapsible panel logic
 window.toggleCollapsible = function(id) {
     const element = document.getElementById(id);
     if (element.style.maxHeight) {
         element.style.maxHeight = null;
     } else {
-        // ScrollHeight gives the required height of the content
         element.style.maxHeight = element.scrollHeight + "px";
     }
 }

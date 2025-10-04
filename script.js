@@ -41,13 +41,11 @@ async function initializeAppAndAuth() {
         await setPersistence(auth, browserSessionPersistence);
         
         // CRITICAL: Sign in anonymously to ensure an auth.uid exists for read/write permissions
-        // This is necessary for both student login/read access and general registration/break requests.
         await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
-                // This line displays the UID for debugging purposes (e.g., hk2w8EhSBMZSDSFhck1MitjFLVb2)
                 document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId}`; 
                 checkLoginStatus();
             } else {
@@ -70,7 +68,7 @@ function getBreakRequestRef(studentId) { return ref(db, `${RTDB_ROOT_PATH}/break
 
 
 // ====================================================================
-// --- View Switching and Auth Logic (Retained) ---
+// --- Login and Registration Logic ---
 // ====================================================================
 
 window.showLogin = function () {
@@ -202,6 +200,7 @@ window.logout = function () {
     showLogin();
 }
 
+// 🛑 FIX: Registration function is correct, but relies heavily on the new rules 🛑
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
@@ -227,12 +226,13 @@ window.registerStudent = async function () {
             return;
         }
 
+        // CRITICAL: Must include status: 'pending' for the security rule to pass
         await set(getStudentRef(newId), {
             name: name,
             guardianPhone: guardianPhone,
             class: studentClass,
             roll: studentRoll,
-            status: 'pending',
+            status: 'pending', 
             id: newId, 
             registeredAt: Date.now()
         });
@@ -247,17 +247,15 @@ window.registerStudent = async function () {
 }
 
 // ====================================================================
-// --- Admin Panel Functions (Approved Student List Fix) ---
+// --- Admin Panel Functions ---
 // ====================================================================
 
 async function initializeAdminPanel() {
-    // CRITICAL: Ensure Admin is authenticated before setting up listeners that rely on read permissions
     if (!auth.currentUser || !localStorage.getItem('isAdmin')) {
         console.error("Admin not fully authenticated or local storage status is missing.");
         return;
     }
 
-    // RTDB Listener for pending students
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('pending')), (snapshot) => {
         const pendingDocs = [];
         snapshot.forEach(childSnapshot => {
@@ -266,61 +264,13 @@ async function initializeAdminPanel() {
         renderPendingStudents(pendingDocs);
     });
 
-    // RTDB Listener for approved students - This is the core data load for the list.
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('approved')), (snapshot) => {
         allApprovedStudents = [];
         snapshot.forEach(childSnapshot => {
             allApprovedStudents.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
-        // This function populates the dropdown list
         renderStudentSelector(allApprovedStudents);
     });
-}
-
-function renderPendingStudents(pendingStudents) {
-    const ul = document.getElementById('pendingStudentsList');
-    ul.innerHTML = '';
-    const pendingCountSpan = document.getElementById('pendingCount');
-
-    pendingCountSpan.textContent = `(${pendingStudents.length})`;
-
-    if (pendingStudents.length === 0) {
-        ul.innerHTML = '<p class="text-gray-500">No pending students</p>';
-        return;
-    }
-
-    pendingStudents.forEach(data => {
-        const li = document.createElement('li');
-        li.classList.add('flex', 'justify-between', 'items-center', 'bg-white', 'p-3', 'mb-2');
-        li.innerHTML = `
-            <div>
-                <strong>${data.name}</strong> (ID: ${data.id})<br>
-                <small>Class: ${data.class}, Phone: ${data.guardianPhone}</small>
-            </div>
-            <button class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm" onclick="approveStudent('${data.id}')">Approve</button>
-        `;
-        ul.appendChild(li);
-    });
-}
-
-function renderStudentSelector(students) {
-    const selector = document.getElementById('studentSelector');
-    const selectedId = selector.value; 
-    selector.innerHTML = '<option value="">Select Student...</option>';
-
-    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = `${student.name} (ID: ${student.id})`;
-        if (student.id === selectedId) {
-            option.selected = true;
-        }
-        selector.appendChild(option);
-    });
-
-    if (selectedId) {
-        loadMonthlyFees();
-    }
 }
 
 window.approveStudent = async function (studentId) {
@@ -336,7 +286,6 @@ window.approveStudent = async function (studentId) {
     }
 }
 
-// 🛑 FIX: Robust markPaid function 🛑
 window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = ref(getFeesRef(studentId), monthKey);
     
@@ -356,9 +305,29 @@ window.markPaid = async function (studentId, monthKey, method) {
     }
 }
 
+window.loadMonthlyFees = function () {
+    const studentId = document.getElementById('studentSelector').value;
+    const feeContainer = document.getElementById('adminFeeManagementList');
+    
+    if (!studentId) {
+        feeContainer.innerHTML = '<p class="text-gray-500">Select a student to view fees.</p>';
+        return;
+    }
+
+    // Listener for monthly fees for the selected student
+    onValue(getFeesRef(studentId), (snapshot) => {
+        const fees = snapshot.val() || {};
+        // CRITICAL FIX: Ensure fees is an empty object if no data exists, preventing errors
+        renderAdminFeeManagement(fees, studentId, feeContainer);
+    }, (error) => {
+        // Fallback for permission errors on the read
+        console.error("Failed to load monthly fees for Admin:", error);
+        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules or student data path. Error: ${error.message}</p>`;
+    });
+};
 
 // ====================================================================
-// --- Student Panel Functions (Break Request Fix) ---
+// --- Student Panel Functions ---
 // ====================================================================
 
 async function initializeStudentPanel(studentData) {
@@ -366,13 +335,21 @@ async function initializeStudentPanel(studentData) {
     document.getElementById('studentStatus').textContent = studentData.status;
     document.getElementById('studentClass').textContent = studentData.class;
 
+    const feeContainer = document.getElementById('feeStatusList');
+    feeContainer.innerHTML = '<p>Loading fee data...</p>';
+
+    // Listener for monthly fees for the logged-in student
     onValue(getFeesRef(studentData.id), (snapshot) => {
         const fees = snapshot.val() || {};
-        renderFeeStatus(fees, document.getElementById('feeStatusList'));
+        // CRITICAL FIX: Pass the container and the data
+        renderFeeStatus(fees, feeContainer);
+    }, (error) => {
+        // Fallback for permission errors on the read
+        console.error("Failed to load monthly fees for Student:", error);
+        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules. Error: ${error.message}</p>`;
     });
 }
 
-// 🛑 FIX: Robust requestBreak function 🛑
 window.requestBreak = async function (studentId) {
     if (!confirm("Are you sure you want to send a break request? The admin will review this.")) {
         return;
@@ -399,12 +376,56 @@ window.requestBreak = async function (studentId) {
     }
 }
 
-// ... (Other rendering functions are needed but omitted here for brevity and focus on core logic) ...
-// The following functions must be present in your full script:
-// - renderFeeStatus
-// - loadMonthlyFees
-// - renderAdminFeeManagement
-// - openPaymentModal
-// - markBreak
+// ====================================================================
+// --- Rendering/Utility Functions (MUST BE INCLUDED) ---
+// ====================================================================
+
+function getMonthKeys() {
+    return ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+}
+
+function renderFeeStatus(fees, container) {
+    container.innerHTML = ''; 
+    const monthKeys = getMonthKeys();
+
+    monthKeys.forEach(month => {
+        const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
+        const li = document.createElement('li');
+        li.classList.add('flex', 'justify-between', 'items-center', 'py-1');
+        li.innerHTML = `
+            <span>${month.charAt(0).toUpperCase() + month.slice(1)}: **${status}**</span>
+            <span class="${status === 'paid' ? 'text-green-600' : 'text-red-600'} text-sm font-bold">${status.toUpperCase()}</span>
+        `;
+        container.appendChild(li);
+    });
+}
+
+function renderAdminFeeManagement(fees, studentId, container) {
+    container.innerHTML = '';
+    const monthKeys = getMonthKeys();
+
+    monthKeys.forEach(month => {
+        const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
+        const paymentInfo = status === 'paid' ? `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()})` : '';
+
+        const li = document.createElement('li');
+        li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm');
+        li.innerHTML = `
+            <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="${status === 'paid' ? 'text-green-600' : 'text-red-600'}">${status.toUpperCase()}</span></div>
+            <small class="text-gray-500">${paymentInfo}</small>
+            <div class="mt-2 space-x-2">
+                ${status === 'unpaid' ? `<button class="bg-blue-500 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>` : ''}
+            </div>
+        `;
+        container.appendChild(li);
+    });
+}
+
+window.openPaymentModal = function(studentId, monthKey) {
+    const method = prompt(`Mark ${monthKey} as paid for ${studentId}. Enter Payment Method (e.g., Cash, Bkash):`);
+    if (method) {
+        markPaid(studentId, monthKey, method);
+    }
+};
 
 window.onload = initializeAppAndAuth;

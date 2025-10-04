@@ -1,6 +1,6 @@
 // Firebase imports
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 // Firebase config
@@ -174,13 +174,13 @@ function loadStudentPanel(student) {
 
 // LOGOUTS
 studentLogoutBtn.addEventListener("click", () => { studentPanel.classList.add("hidden"); loginContainer.classList.remove("hidden"); messageDiv.textContent = "Logged out successfully"; });
-adminLogoutBtn.addEventListener("click", async () => { await auth.signOut(); adminPanel.classList.add("hidden"); loginContainer.classList.remove("hidden"); messageDiv.textContent = "Admin logged out successfully"; });
+adminLogoutBtn.addEventListener("click", async () => { await signOut(auth); adminPanel.classList.add("hidden"); loginContainer.classList.remove("hidden"); messageDiv.textContent = "Admin logged out successfully"; });
 
 // HELPER
 function hideAllSections() { profileSection.classList.add("hidden"); tuitionSection.classList.add("hidden"); breakSection.classList.add("hidden"); }
 function resetLoginForm() { userID.value = ""; document.getElementById("adminEmail").value = ""; document.getElementById("adminPassword").value = ""; messageDiv.textContent = ""; }
 
-// ADMIN PANEL
+// ADMIN PANEL TAB SWITCH
 tabBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     tabBtns.forEach(b => b.classList.remove("active"));
@@ -191,6 +191,7 @@ tabBtns.forEach(btn => {
   });
 });
 
+// LOAD ADMIN DATA
 async function loadAdminData() {
   const snapshot = await get(ref(db, "students"));
   pendingStudentsList.innerHTML = "";
@@ -199,40 +200,55 @@ async function loadAdminData() {
   if (!snapshot.exists()) return;
 
   const students = snapshot.val();
+
+  // Populate lists
   Object.values(students).forEach(student => {
-    // Ensure class is padded
     let cls = student.class;
     if (cls.length === 1) cls = "0" + cls;
 
-    // PENDING: not approved
+    // Pending students
     if (student.approved === false) {
       const li = document.createElement("li");
-      li.textContent = `${student.name} (${student.id}) - Class ${cls} `;
-      const approveBtn = document.createElement("button");
-      approveBtn.textContent = "Approve";
-      approveBtn.addEventListener("click", async () => {
-        await update(ref(db, `students/${student.id}`), { approved: true, class: cls });
-        loadAdminData();
-      });
-      li.appendChild(approveBtn);
+      li.innerHTML = `${student.name} (${student.id}) - Class ${cls} <button class="approveBtn">Approve</button>`;
       pendingStudentsList.appendChild(li);
     }
 
-    // APPROVED: add to class tab
+    // Approved students in class tabs
     if (student.approved === true && classLists[cls]) {
       const li = document.createElement("li");
       li.textContent = `${student.name} (${student.id})`;
-      li.addEventListener("click", () => showStudentDetail(student));
+      li.classList.add("studentItem");
+      li.dataset.id = student.id;
       classLists[cls].appendChild(li);
     }
   });
 }
 
-// Show individual student details & tuition status
-function showStudentDetail(student) {
-  tabContents.forEach(c => c.classList.add("hidden"));
-  document.getElementById("studentDetail").classList.remove("hidden");
+// EVENT DELEGATION FOR DYNAMIC BUTTONS
+pendingStudentsList.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("approveBtn")) {
+    const li = e.target.parentElement;
+    const studentID = li.textContent.match(/\((.*?)\)/)[1];
+    await update(ref(db, `students/${studentID}`), { approved: true });
+    loadAdminData();
+  }
+});
 
+// EVENT DELEGATION FOR CLASS STUDENTS
+Object.values(classLists).forEach(list => {
+  list.addEventListener("click", async (e) => {
+    if (e.target.classList.contains("studentItem")) {
+      const studentID = e.target.dataset.id;
+      const snapshot = await get(ref(db, `students/${studentID}`));
+      if (snapshot.exists()) showStudentDetail(snapshot.val());
+      tabContents.forEach(c => c.classList.add("hidden"));
+      document.getElementById("studentDetail").classList.remove("hidden");
+    }
+  });
+});
+
+// SHOW STUDENT DETAILS & TUITION
+function showStudentDetail(student) {
   studentInfoDiv.innerHTML = `
     <strong>Name:</strong> ${student.name}<br>
     <strong>Class:</strong> ${student.class}<br>
@@ -246,19 +262,23 @@ function showStudentDetail(student) {
   Object.entries(student.tuitionStatus).forEach(([month, data]) => {
     const tr = document.createElement("tr");
     const statusText = data.paid ? `Paid (${data.date})` : "Unpaid";
-    const actionBtn = document.createElement("button");
-    actionBtn.textContent = data.paid ? "Mark Unpaid" : "Mark Paid";
-    actionBtn.addEventListener("click", async () => {
+    const btn = document.createElement("button");
+    btn.textContent = data.paid ? "Mark Unpaid" : "Mark Paid";
+    btn.addEventListener("click", async () => {
       await update(ref(db, `students/${student.id}/tuitionStatus/${month}`), {
         paid: !data.paid,
         date: !data.paid ? new Date().toLocaleDateString() : null
       });
       loadAdminData();
-      showStudentDetail({ ...student, tuitionStatus: { ...student.tuitionStatus, [month]: { paid: !data.paid, date: !data.paid ? new Date().toLocaleDateString() : null } } });
+      const snapshot = await get(ref(db, `students/${student.id}`));
+      showStudentDetail(snapshot.val());
     });
-    tr.innerHTML = `<td>${month}</td><td>${statusText}</td>`;
+    const tdStatus = document.createElement("td");
+    tdStatus.textContent = statusText;
     const tdAction = document.createElement("td");
-    tdAction.appendChild(actionBtn);
+    tdAction.appendChild(btn);
+    tr.appendChild(document.createElement("td")).textContent = month;
+    tr.appendChild(tdStatus);
     tr.appendChild(tdAction);
     studentTuitionTable.appendChild(tr);
   });

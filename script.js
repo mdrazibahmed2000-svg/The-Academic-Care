@@ -27,7 +27,7 @@ let currentUserId;
 let currentStudentData = null;
 let allApprovedStudents = [];
 
-const RTDB_ROOT_PATH = ''; // Confirmed root path is empty
+const RTDB_ROOT_PATH = ''; 
 
 
 // Function to safely initialize Firebase and handle authentication
@@ -200,7 +200,7 @@ window.logout = function () {
     showLogin();
 }
 
-// 🛑 FIX: Registration function is correct, but relies heavily on the new rules 🛑
+// FIX: Registration function relies heavily on the final security rules to pass
 window.registerStudent = async function () {
     const name = document.getElementById('regName').value.trim();
     const guardianPhone = document.getElementById('regGuardianPhone').value.trim();
@@ -256,6 +256,7 @@ async function initializeAdminPanel() {
         return;
     }
 
+    // Listener for pending students
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('pending')), (snapshot) => {
         const pendingDocs = [];
         snapshot.forEach(childSnapshot => {
@@ -264,6 +265,7 @@ async function initializeAdminPanel() {
         renderPendingStudents(pendingDocs);
     });
 
+    // Listener for approved students (populates the selector) - FIX FOR ADMIN LIST
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('approved')), (snapshot) => {
         allApprovedStudents = [];
         snapshot.forEach(childSnapshot => {
@@ -297,7 +299,7 @@ window.markPaid = async function (studentId, monthKey, method) {
             recordedBy: auth.currentUser.uid 
         });
         
-        console.log(`Successfully marked ${monthKey} for student ${studentId} as paid.`);
+        alert(`Successfully marked ${monthKey} for student ${studentId} as paid.`);
         
     } catch (e) {
         console.error("Error recording payment:", e);
@@ -305,6 +307,7 @@ window.markPaid = async function (studentId, monthKey, method) {
     }
 }
 
+// FIX: Robust function to load monthly fees with error handling for the Admin panel
 window.loadMonthlyFees = function () {
     const studentId = document.getElementById('studentSelector').value;
     const feeContainer = document.getElementById('adminFeeManagementList');
@@ -314,15 +317,15 @@ window.loadMonthlyFees = function () {
         return;
     }
 
+    feeContainer.innerHTML = '<p class="text-gray-500">Loading fee data...</p>';
+
     // Listener for monthly fees for the selected student
     onValue(getFeesRef(studentId), (snapshot) => {
         const fees = snapshot.val() || {};
-        // CRITICAL FIX: Ensure fees is an empty object if no data exists, preventing errors
         renderAdminFeeManagement(fees, studentId, feeContainer);
     }, (error) => {
-        // Fallback for permission errors on the read
         console.error("Failed to load monthly fees for Admin:", error);
-        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules or student data path. Error: ${error.message}</p>`;
+        feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules. Error: ${error.message}</p>`;
     });
 };
 
@@ -341,10 +344,8 @@ async function initializeStudentPanel(studentData) {
     // Listener for monthly fees for the logged-in student
     onValue(getFeesRef(studentData.id), (snapshot) => {
         const fees = snapshot.val() || {};
-        // CRITICAL FIX: Pass the container and the data
         renderFeeStatus(fees, feeContainer);
     }, (error) => {
-        // Fallback for permission errors on the read
         console.error("Failed to load monthly fees for Student:", error);
         feeContainer.innerHTML = `<p class="text-red-500">Permission Denied: Failed to load fees. Check security rules. Error: ${error.message}</p>`;
     });
@@ -377,11 +378,58 @@ window.requestBreak = async function (studentId) {
 }
 
 // ====================================================================
-// --- Rendering/Utility Functions (MUST BE INCLUDED) ---
+// --- Rendering/Utility Functions ---
 // ====================================================================
 
 function getMonthKeys() {
     return ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+}
+
+function renderPendingStudents(pendingStudents) {
+    const ul = document.getElementById('pendingStudentsList');
+    ul.innerHTML = '';
+    const pendingCountSpan = document.getElementById('pendingCount');
+
+    pendingCountSpan.textContent = `(${pendingStudents.length})`;
+
+    if (pendingStudents.length === 0) {
+        ul.innerHTML = '<p class="text-gray-500">No pending students</p>';
+        return;
+    }
+
+    pendingStudents.forEach(data => {
+        const li = document.createElement('li');
+        li.classList.add('flex', 'justify-between', 'items-center', 'bg-white', 'p-3', 'mb-2', 'rounded');
+        li.innerHTML = `
+            <div>
+                <strong>${data.name}</strong> (ID: ${data.id})<br>
+                <small>Class: ${data.class}, Phone: ${data.guardianPhone}</small>
+            </div>
+            <button class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm" onclick="approveStudent('${data.id}')">Approve</button>
+        `;
+        ul.appendChild(li);
+    });
+}
+
+function renderStudentSelector(students) {
+    const selector = document.getElementById('studentSelector');
+    const selectedId = selector.value; 
+    selector.innerHTML = '<option value="">Select Student...</option>';
+
+    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.name} (ID: ${student.id})`;
+        if (student.id === selectedId) {
+            option.selected = true;
+        }
+        selector.appendChild(option);
+    });
+
+    // If an ID was selected, reload the monthly fees for the admin panel
+    if (selectedId) {
+        loadMonthlyFees();
+    }
 }
 
 function renderFeeStatus(fees, container) {
@@ -414,7 +462,7 @@ function renderAdminFeeManagement(fees, studentId, container) {
             <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="${status === 'paid' ? 'text-green-600' : 'text-red-600'}">${status.toUpperCase()}</span></div>
             <small class="text-gray-500">${paymentInfo}</small>
             <div class="mt-2 space-x-2">
-                ${status === 'unpaid' ? `<button class="bg-blue-500 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>` : ''}
+                ${status === 'unpaid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>` : ''}
             </div>
         `;
         container.appendChild(li);

@@ -112,7 +112,8 @@ async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-    if (loginId && auth.currentUser) {
+    // Only proceed if a loginId exists AND a user is actually authenticated
+    if (loginId && auth.currentUser) { 
         if (isAdmin) {
             // Check if the current user is actually a password-authenticated user
             const isPasswordUser = auth.currentUser.providerData.some(p => p.providerId === 'password');
@@ -194,7 +195,7 @@ async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
-    // 1. Fetch the student data (using Anonymous access for lookup if needed, but not for the session)
+    // 1. Fetch the student data
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {

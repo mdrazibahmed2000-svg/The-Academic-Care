@@ -1,120 +1,40 @@
-:root {
-    --primary-color: #007bff; /* Blue */
-    --accent-color: #28a745; /* Green */
-    --pending-color: #ffc107; /* Yellow */
-    --background-color: #f8f9fa;
-    --text-color: #343a40;
-}
-
-/* Base Styles */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+  font-family: 'Arial', sans-serif;
 }
 
-.container {
-    background: white;
-    padding: 20px;
-    margin: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 400px; /* Max width for better form on large screens */
+.card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+  position: relative;
 }
 
-/* Typography */
-h1, h2 {
-    text-align: center;
-    color: var(--primary-color);
-}
-h1 { font-size: 1.8em; }
-h2 { font-size: 1.4em; margin-bottom: 20px; }
-
-/* Form Styles */
-.form-group {
-    margin-bottom: 15px;
+.input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+.btn {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="tel"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    box-sizing: border-box; 
-    font-size: 1em;
+.fee-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid #ccc;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
-/* Buttons */
-#registerBtn, #loginBtn, #logoutBtn {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 1.1em;
-    transition: background-color 0.3s ease;
-    margin-top: 10px;
-}
-
-#registerBtn:hover, #loginBtn:hover, #logoutBtn:hover {
-    background-color: #0056b3;
-}
-
-/* Status Message / Status Card */
-#resultMessage, #statusCard {
-    margin-top: 20px;
-    padding: 15px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    background-color: #e9ecef;
-    text-align: center;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.pending {
-    color: var(--pending-color);
-    font-weight: bold;
-    font-size: 1.1em;
-}
-.approved {
-    color: var(--accent-color); /* Green for Approved */
-    font-weight: bold;
-    font-size: 1.1em;
-}
-.error {
-    color: #dc3545; /* Red for errors */
-}
-
-/* Utility */
-.mt-20 { margin-top: 20px; text-align: center; }
-
-/* Mobile Responsiveness */
-@media (max-width: 600px) {
-    .container {
-        margin: 10px;
-        padding: 15px;
-        box-shadow: none; 
-    }
-}
+.status-paid { color: #10b981; }
+.status-break { color: #f97316; }
+.status-unpaid { color: #ef4444; }

@@ -315,8 +315,6 @@
         
         // --- FIREBASE INITIALIZATION & AUTHENTICATION ---
         
-        // Removed the separate setupAuthListener function and moved the logic into initializeFirebase
-
         async function initializeFirebase() {
             try {
                 // setLogLevel('debug'); // Uncomment for debugging
@@ -347,7 +345,7 @@
                     await signInWithCustomToken(auth, initialAuthToken);
                 }
                 
-                // --- 2. Long-term Auth Listener (FIX: Now 'auth' is defined) ---
+                // --- 2. Long-term Auth Listener ---
                 onAuthStateChanged(auth, (user) => {
                     currentUserId = user ? user.uid : null;
                     userIdDisplayEl.textContent = `Current User ID: ${currentUserId || 'N/A'}`;
@@ -385,13 +383,6 @@
                 showMessage("Failed to initialize the application. Check console for details.", true);
             }
         }
-
-        // function setupAuthListener() {
-        //     onAuthStateChanged(auth, (user) => {
-        //         currentUserId = user ? user.uid : null;
-        //         userIdDisplayEl.textContent = `Current User ID: ${currentUserId || 'N/A'}`;
-        //     });
-        // }
         
         // --- LOGIN & LOGOUT HANDLERS ---
 
@@ -515,6 +506,22 @@
             toggleLoading(true);
             showMessage('');
 
+            // ** FIX: Explicitly ensure anonymous sign-in is complete before attempting write **
+            // If the user isn't authenticated yet (which is typical for a new student), sign them in anonymously.
+            if (!auth.currentUser || auth.currentUser.isAnonymous === false) {
+                try {
+                    await signInAnonymously(auth);
+                    // Update the global currentUserId after successful sign-in
+                    currentUserId = auth.currentUser.uid;
+                } catch (anonError) {
+                    console.error("Anonymous Sign-in Error during Registration:", anonError);
+                    showMessage('Failed to connect to the database for registration. (Auth Error).', true);
+                    toggleLoading(false);
+                    return;
+                }
+            }
+            // ** END FIX **
+            
             try {
                 // Check if ID already exists
                 const docSnap = await getDoc(studentDocRef);
@@ -531,12 +538,13 @@
                     guardian: guardian,
                     status: 'pending',
                     registeredAt: new Date().toISOString(),
-                    userId: currentUserId || 'anonymous', // Track who registered it
+                    // Use the now-guaranteed currentUserId (the anonymous ID)
+                    userId: currentUserId, 
                 };
 
                 await setDoc(studentDocRef, newStudent);
 
-                // Initialize Tuition Fee Status (All months unpaid for current year + next 12 months for demonstration)
+                // Initialize Tuition Fee Status 
                 const tuitionDocRef = doc(db, APP_COLLECTION_PATH(appId), 'tuition_fees', studentId);
                 const feeData = {};
                 const now = new Date();
@@ -556,7 +564,8 @@
 
             } catch (error) {
                 console.error("Registration Error:", error);
-                showMessage('Failed to submit registration. Check console for details.', true);
+                // This error should now be handled by the explicit sign-in above.
+                showMessage('Failed to submit registration. Error: Permission denied. (Check Database Rules/Connection).', true);
             } finally {
                 toggleLoading(false);
             }
@@ -1079,7 +1088,6 @@
 
         // --- START APPLICATION ---
         window.onload = initializeFirebase;
-        // Removed the problematic call to setupAuthListener() here: setupAuthListener(); 
         
     </script>
 </body>

@@ -1,70 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Academic Care Portal</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Fee Management</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-100">
+<body>
 
-  <div class="container mx-auto p-6 max-w-3xl">
+  <div class="container">
+    <h1 id="welcomeHeader">Student Fee Management</h1>
 
-    <h1 class="text-3xl font-bold text-indigo-600 text-center mb-6">
-      Academic Care Portal
-    </h1>
-
-    <!-- Login Page -->
-    <div id="login-page" class="card">
-      <h2 class="text-xl font-semibold mb-4 text-center">Login</h2>
-      <input id="studentId" type="text" placeholder="Student ID or admin" class="input mb-2" />
-      <p id="loginError" class="text-red-600 text-sm mb-2"></p>
-      <button onclick="login()" class="btn bg-indigo-500 hover:bg-indigo-600 text-white w-full mb-2">Login</button>
-      <button onclick="showRegister()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Register New Student</button>
+    <!-- ====================== AUTH PANEL ======================= -->
+    <div id="authCard" class="card">
+      <h2>Login</h2>
+      <input type="text" id="studentIdInput" placeholder="Enter Student ID (for students)">
+      <input type="email" id="adminEmail" placeholder="Admin Email">
+      <input type="password" id="adminPassword" placeholder="Admin Password">
+      <button class="bg-indigo-500 hover:bg-indigo-600" id="loginBtn">Login</button>
+      <p id="authError" style="color:red;"></p>
     </div>
 
-    <!-- Register Page -->
-    <div id="register-page" class="card hidden">
-      <h2 class="text-xl font-semibold mb-4 text-center">Student Registration</h2>
-      <input id="regName" type="text" placeholder="Full Name" class="input mb-2" />
-      <input id="regClass" type="number" placeholder="Class" class="input mb-2" />
-      <input id="regRoll" type="number" placeholder="Roll" class="input mb-2" />
-      <input id="regGuardian" type="text" placeholder="Guardian Name" class="input mb-2" />
-      <button onclick="registerStudent()" class="btn bg-green-500 hover:bg-green-600 text-white w-full mb-2">Submit</button>
-      <button onclick="showLogin()" class="btn bg-gray-200 hover:bg-gray-300 w-full">Back to Login</button>
+    <!-- ====================== STUDENT PANEL ======================= -->
+    <div id="studentPanel" class="card" style="display:none;">
+      <h2>My Fee Status</h2>
+      <ul id="feeStatusList"></ul>
+      <button id="logoutBtn" class="bg-gray-500 hover:bg-gray-600">Logout</button>
     </div>
 
-    <!-- Student Dashboard -->
-    <div id="dashboard" class="hidden card">
-      <button onclick="logout()" class="absolute top-4 right-6 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded">Logout</button>
-      <h2 id="studentName" class="text-xl font-semibold mb-4 text-center"></h2>
-      <div id="studentFees" class="text-sm"></div>
-    </div>
-
-    <!-- Admin Panel -->
-    <div id="admin-panel" class="hidden">
-      <div class="card mb-4">
-        <h3 class="text-lg font-bold text-yellow-600 mb-2">Pending Students</h3>
-        <ul id="pendingStudents" class="list-disc pl-5"></ul>
+    <!-- ====================== ADMIN PANEL ======================= -->
+    <div id="adminPanel" class="card" style="display:none;">
+      <h2>Admin Dashboard</h2>
+      <div>
+        <label>Select Approved Student</label>
+        <select id="studentSelect"></select>
       </div>
-
-      <div class="card mb-4">
-        <h3 class="text-lg font-bold text-green-600 mb-2">Approved Students</h3>
-        <ul id="approvedStudents" class="list-disc pl-5"></ul>
-      </div>
-
-      <div class="card">
-        <h3 class="text-lg font-bold text-blue-600 mb-2">Monthly Fee Management</h3>
-        <select id="studentSelector" onchange="loadMonthlyFees()" class="input mb-3"></select>
-        <ul id="monthlyFees"></ul>
-      </div>
+      <h3>Monthly Payments</h3>
+      <ul id="monthlyFees"></ul>
+      <button id="logoutAdminBtn" class="bg-gray-500 hover:bg-gray-600">Logout</button>
     </div>
-
   </div>
 
-  <script src="script.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

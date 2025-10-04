@@ -1,14 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Academic Care</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Academic Care</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -56,10 +52,7 @@
         <h3>Tuition Fee Status</h3>
         <table>
             <thead>
-                <tr>
-                    <th>Month</th>
-                    <th>Status</th>
-                </tr>
+                <tr><th>Month</th><th>Status</th></tr>
             </thead>
             <tbody id="tuitionTable"></tbody>
         </table>
@@ -79,8 +72,27 @@
     <h1>Admin Panel</h1>
     <h3>Pending Students</h3>
     <ul id="pendingStudents"></ul>
+
+    <h3>Mark Tuition Paid</h3>
+    <input type="text" id="tuitionStudentID" placeholder="Enter Student ID">
+    <select id="tuitionMonth">
+        <option value="">Select Month</option>
+        <option value="January">January</option>
+        <option value="February">February</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+    </select>
+    <button id="markPaidBtn">Mark Paid</button>
 </div>
 
-<script src="script.js"></script>
+<script type="module" src="script.js"></script>
 </body>
 </html>

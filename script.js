@@ -138,9 +138,7 @@ function showPanel(targetPanel) {
 // Calls loadBreakRequestForm when the Break tab is opened
 function toggleStudentPanelContent(contentSection) {
     // Hide all tab contents
-    [profileSection, tuitionSection, breakSection, 
-     document.getElementById("pending"), document.getElementById("studentDetail") // Include admin detail views to be safe
-    ].forEach(section => {
+    [profileSection, tuitionSection, breakSection].forEach(section => {
         if(section) section.classList.add("hidden");
     });
     // Show the selected content
@@ -336,25 +334,47 @@ function renderStudentProfile(data) {
     `;
 }
 
-// Renders the Monthly Fee Table with separate Status and Payment Date columns
+// UPDATED: Future months are now shown as "---" (unrecorded)
 function renderStudentFeeTable(tuitionStatus) {
     if (!tuitionTableBody) return;
     tuitionTableBody.innerHTML = '';
 
-    MONTHS.forEach(month => {
+    const currentDate = new Date();
+    // October is month index 9 (0-indexed)
+    const currentMonthIndex = currentDate.getMonth(); 
+    
+    MONTHS.forEach((month, index) => {
         const data = tuitionStatus[month] || { paid: false, date: null };
-        let statusText = "Unpaid";
-        let statusClass = "unpaid";
-        let dateText = '---'; // Placeholder for unpaid/break/not recorded
+        let statusText = "---";
+        let statusClass = "unrecorded"; // Default for unrecorded/future months
+        let dateText = '---'; 
 
+        // Check if the month is currently due (current month or a past month)
+        // NOTE: This comparison is reliable for a Jan-Dec academic year.
+        const isMonthDueOrPast = (index <= currentMonthIndex);
+        
+        // Determine Status and Class
         if (data.paid) {
             statusText = `Paid`; 
             statusClass = "paid";
             dateText = data.date; 
+
         } else if (data.isBreak) {
             statusText = `Break`;
             statusClass = "break";
             dateText = data.date || 'Requested'; 
+
+        } else if (isMonthDueOrPast) {
+            // Month is due (current or past) and is NOT Paid/Break, so it is UNPAID.
+            statusText = "Unpaid";
+            statusClass = "unpaid";
+            dateText = '---'; 
+
+        } else {
+            // Month is in the future and unrecorded. Status remains '---'.
+            statusText = "---";
+            statusClass = "unrecorded";
+            dateText = '---'; 
         }
         
         const row = tuitionTableBody.insertRow();
@@ -367,7 +387,7 @@ function renderStudentFeeTable(tuitionStatus) {
 }
 
 // ====================================================================
-// --- BREAK REQUEST LOGIC (Updated to show all UNPAID months) ---
+// --- BREAK REQUEST LOGIC (Shows all UNPAID/UNRECORDED months) ---
 // ====================================================================
 
 async function loadBreakRequestForm(studentId) {

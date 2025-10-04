@@ -2,7 +2,7 @@
 // CRITICAL: Modular Imports for Firebase SDK
 // ====================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 // RTDB Imports
 import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
@@ -40,22 +40,20 @@ async function initializeAppAndAuth() {
         // Set persistence before attempting any auth calls
         await setPersistence(auth, browserSessionPersistence);
         
-        // CRITICAL FIX: Only sign in anonymously IF no user is currently active (prevents password token override)
-        if (!auth.currentUser) {
-            await signInAnonymously(auth); 
-        }
-
+        // CRITICAL UPDATE: Removed signInAnonymously() for better Admin stability.
+        
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 // Determine if the user is a full Admin (password user)
                 const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
 
                 currentUserId = user.uid;
-                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Password' : 'Anonymous'})`; 
+                document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Password' : 'Authenticated'})`; 
                 
                 checkLoginStatus();
             } else {
                 currentUserId = null;
+                document.getElementById('authUserId').textContent = `Auth User ID: N/A (Logged Out)`;
                 showLogin();
             }
         });
@@ -114,16 +112,16 @@ async function checkLoginStatus() {
     const loginId = localStorage.getItem('appLoginId');
     const isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-    if (loginId) {
+    if (loginId && auth.currentUser) {
         if (isAdmin) {
             // Check if the current user is actually a password-authenticated user
-            const isPasswordUser = auth.currentUser && auth.currentUser.providerData.some(p => p.providerId === 'password');
+            const isPasswordUser = auth.currentUser.providerData.some(p => p.providerId === 'password');
 
             if (isPasswordUser) {
                 await initializeAdminPanel();
                 showDashboard(true);
             } else {
-                 // If the loginId is 'admin' but the session is Anonymous, force logout/re-login
+                 // If the loginId is 'admin' but the session is not Password, force logout
                 logout(); 
             }
         } else {
@@ -181,13 +179,13 @@ async function handleAdminLoginWithEmail(email, password) {
         localStorage.setItem('appLoginId', 'admin');
         localStorage.setItem('isAdmin', 'true');
         
-        // No need to initializeAdminPanel here, onAuthStateChanged will handle it via checkLoginStatus
+        // onAuthStateChanged will handle routing
 
     } catch (error) {
         console.error("Admin Email Login failed:", error);
         errorElement.textContent = `Admin Login failed. Check credentials. Error: ${error.message.replace('Firebase: Error (auth/', '').replace(')', '')}`;
-        // Force signOut of potential anonymous user if email/password fails to ensure a clean slate
-        signOut(auth).then(() => signInAnonymously(auth));
+        // CRITICAL UPDATE: Simply sign out on failure without re-signing in anonymously
+        signOut(auth);
     }
 }
 
@@ -196,7 +194,7 @@ async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
-    // 1. Fetch the student data
+    // 1. Fetch the student data (using Anonymous access for lookup if needed, but not for the session)
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
@@ -246,10 +244,8 @@ window.logout = function () {
     currentStudentData = null;
     currentUserId = null;
     
-    // Sign out the current user, then sign in anonymously to keep basic read access
-    signOut(auth).then(() => {
-        signInAnonymously(auth); 
-    });
+    // CRITICAL UPDATE: Just sign out, do not sign back in anonymously.
+    signOut(auth);
     
     showLogin();
 }
@@ -352,6 +348,7 @@ window.approveStudent = async function (studentId) {
 
 // Helper function to check for Admin write permission (Password token is required)
 function checkAdminWritePermission() {
+    // CRITICAL CHECK: Ensures the current user is authenticated via password
     return auth.currentUser && 
            localStorage.getItem('isAdmin') === 'true' && 
            auth.currentUser.providerData.some(p => p.providerId === 'password');
@@ -373,8 +370,6 @@ window.markPaid = async function (studentId, monthKey, method) {
             paymentDate: Date.now(),
             recordedBy: auth.currentUser.uid 
         });
-        
-        // Alert is removed to rely on UI refresh for feedback
         
     } catch (e) {
         console.error("Error recording payment:", e);
@@ -404,8 +399,6 @@ window.markBreak = async function (studentId, monthKey) {
         if (snapshot.exists() && snapshot.val().requestedForMonth === monthKey) {
             await remove(breakReqRef);
         }
-        
-        // Alert is removed to rely on UI refresh for feedback
         
     } catch (e) {
         console.error("Error recording break status:", e);
@@ -510,6 +503,7 @@ window.requestBreak = async function (studentId) {
         const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         const nextMonthKey = nextMonth.toLocaleString('en-us', { month: 'long' }).toLowerCase();
         
+        // CRITICAL: Ensure the studentId written matches the studentId passed to the function
         await set(getBreakRequestRef(studentId), {
             requestedForMonth: nextMonthKey,
             requestedAt: Date.now(),
@@ -799,7 +793,7 @@ window.draftCommunication = async function(studentId) {
         message += `Thank you for your cooperation.`;
     } else {
         message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
-        message += `Thank you for your prompt payment! Our records show the student's fees are completely up-to-date or marked as break.\n\n`;
+        message += `Thank time for your prompt payment! Our records show the student's fees are completely up-to-date or marked as break.\n\n`;
         if (breakRequest) {
             message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth}. Please review and approve/reject it.\n\n`;
         }

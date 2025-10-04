@@ -34,7 +34,7 @@ button {
 
 button:hover { background-color: #45a049; }
 
-.hidden { display: none; }
+.hidden { display: none !important; } /* Use !important for reliable hiding */
 #message { text-align: center; color: red; margin-top: 10px; }
 
 /* Tables */
@@ -48,8 +48,35 @@ th, td {
     text-align: center;
     border: 1px solid #ddd;
 }
-.paid { background-color: #4CAF50; color: white; padding: 5px; border-radius: 5px; }
-.unpaid { background-color: #f44336; color: white; padding: 5px; border-radius: 5px; }
+
+/* --- CRITICAL STATUS COLORS --- */
+/* Styles for the status display in the Tuition Fee table */
+.paid { 
+    background-color: #4CAF50; /* Green background for Paid status */
+    color: white; 
+    padding: 5px; 
+    border-radius: 5px; 
+    font-weight: bold;
+}
+.unpaid { 
+    background-color: #f44336; /* Red background for Unpaid status */
+    color: white; 
+    padding: 5px; 
+    border-radius: 5px; 
+    font-weight: bold;
+}
+.break { 
+    background-color: #ff9800; /* Orange background for Break status */
+    color: white; 
+    padding: 5px; 
+    border-radius: 5px; 
+    font-weight: bold;
+}
+
+/* Styles for profile status text (e.g., APPROVED/PENDING) */
+.status-paid { color: #4CAF50; font-weight: bold; }
+.status-unpaid { color: #f44336; font-weight: bold; }
+
 
 /* Tabs */
 .tabs { display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
@@ -63,9 +90,9 @@ th, td {
 }
 .tabBtn.active { background-color: #4CAF50; color: white; }
 .tabContent { margin-top: 20px; }
-.tabContent.hidden { display: none; }
+/* Note: tabContent.hidden is handled by .hidden */
 
-/* Lists */
+/* Lists (For Admin Panel) */
 ul { list-style-type: none; padding: 0; }
 ul li { margin: 5px 0; padding: 10px; border: 1px solid #ddd; display: flex; justify-content: space-between; cursor: pointer; border-radius: 5px; }
 ul li button { margin-left: 10px; padding: 5px 10px; }

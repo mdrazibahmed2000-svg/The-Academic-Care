@@ -195,8 +195,6 @@ async function handleLogin() {
         // Student Login path
         try {
             const studentRef = ref(db, `students/${id}`);
-            // This GET call now succeeds IF the security rule is correctly set to allow
-            // unauthenticated read for approved students.
             const snapshot = await get(studentRef);
 
             if (!snapshot.exists()) {
@@ -363,46 +361,57 @@ function renderStudentFeeTable(tuitionStatus) {
     });
 }
 
-// Dynamically loads the available months for break request form
+// ====================================================================
+// --- BREAK REQUEST LOGIC (Updated to show only future months) ---
+// ====================================================================
+
 async function loadBreakRequestForm(studentId) {
     if(!breakMessage || !breakStartMonthSelect || !breakDurationSelect) return;
     breakMessage.textContent = 'Calculating available months...';
     
-    const snapshot = await get(ref(db, `students/${studentId}/tuitionStatus`));
-    const tuitionStatus = snapshot.val() || {};
-
-    const currentMonthIndex = new Date().getMonth(); 
-    const currentYear = new Date().getFullYear();
-
-    let lastPaidOrUnpaidIndex = -1; 
-    
-    // Find the index of the last month that has a payment status (paid/unpaid/break)
-    MONTHS.forEach((month, index) => {
-        const data = tuitionStatus[month];
-        if (data && (data.paid === true || data.paid === false || data.isBreak === true)) {
-            lastPaidOrUnpaidIndex = index;
-        }
-    });
-
-    // Determine the starting month for the break: one month after the last recorded/current month (whichever is later)
-    // The next available month is usually one after the last recorded, but must be at least one month ahead of current month.
-    let startMonthIndex = Math.max(lastPaidOrUnpaidIndex, currentMonthIndex) + 1;
-    
+    // Clear previous options
     breakStartMonthSelect.innerHTML = ''; 
     breakDurationSelect.innerHTML = ''; 
 
-    if (startMonthIndex >= 12) {
+    const snapshot = await get(ref(db, `students/${studentId}/tuitionStatus`));
+    const tuitionStatus = snapshot.val() || {};
+
+    const currentDate = new Date();
+    // Assuming the user's location is Bangladesh (+6), the current month index is reliable for academic year check.
+    const currentMonthIndex = currentDate.getMonth(); // 0 (Jan) to 11 (Dec)
+    const currentYear = currentDate.getFullYear();
+
+    let lastRecordedMonthIndex = -1; 
+    
+    // 1. Find the index of the last month that has *any* status recorded (Paid, Unpaid, or Break)
+    MONTHS.forEach((month, index) => {
+        const data = tuitionStatus[month];
+        // Check if the month entry exists AND has been processed (paid=true, paid=false, or isBreak=true)
+        if (data && (data.paid === true || data.paid === false || data.isBreak === true)) {
+            lastRecordedMonthIndex = index;
+        }
+    });
+
+    // 2. Determine the earliest possible start month for the break
+    // It must be one month after the last recorded month, AND one month after the current calendar month.
+    let earliestStartMonthIndex = Math.max(lastRecordedMonthIndex, currentMonthIndex) + 1;
+    
+    // 3. Check if any months are available for the current academic year (Jan-Dec)
+    if (earliestStartMonthIndex >= 12) {
         breakMessage.textContent = `All months in the current academic year (${currentYear}) are already accounted for.`;
         return;
     }
 
-    const monthsRemainingInYear = 12 - startMonthIndex;
-    const startMonth = MONTHS[startMonthIndex];
+    const monthsRemainingInYear = 12 - earliestStartMonthIndex;
+    const startMonth = MONTHS[earliestStartMonthIndex];
     
-    // Populate the Start Month Select 
-    breakStartMonthSelect.add(new Option(`${startMonth} (${currentYear})`, startMonth));
+    // 4. Populate the Start Month Select 
+    // Add all available future months starting from the earliest calculated index
+    for (let i = earliestStartMonthIndex; i < 12; i++) {
+        breakStartMonthSelect.add(new Option(`${MONTHS[i]} (${currentYear})`, MONTHS[i]));
+    }
     
-    // Populate Duration Select
+    // 5. Populate Duration Select
     for (let i = 1; i <= monthsRemainingInYear; i++) {
           breakDurationSelect.add(new Option(`${i} month${i > 1 ? 's' : ''}`, i));
     }

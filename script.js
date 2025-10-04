@@ -37,6 +37,7 @@ const studentPanel = document.getElementById("studentPanel");
 const profileBtn = document.getElementById("profileBtn");
 const tuitionBtn = document.getElementById("tuitionBtn");
 const breakBtn = document.getElementById("breakBtn");
+const studentLogoutBtn = document.getElementById("studentLogoutBtn");
 const profileSection = document.getElementById("profile");
 const tuitionSection = document.getElementById("tuition");
 const tuitionTable = document.getElementById("tuitionTable").getElementsByTagName("tbody")[0];
@@ -46,6 +47,7 @@ const requestBreakBtn = document.getElementById("requestBreakBtn");
 const breakMessage = document.getElementById("breakMessage");
 
 const adminPanel = document.getElementById("adminPanel");
+const adminLogoutBtn = document.getElementById("adminLogoutBtn");
 const tabBtns = document.querySelectorAll(".tabBtn");
 const tabContents = document.querySelectorAll(".tabContent");
 const pendingStudentsList = document.getElementById("pendingStudents");
@@ -75,14 +77,16 @@ loginBtn.addEventListener("click", async () => {
     if(!email || !password){ messageDiv.textContent="Enter email/password"; return; }
     try {
       await signInWithEmailAndPassword(auth,email,password);
-      loginContainer.classList.add("hidden");
+      resetLoginForm();
       adminPanel.classList.remove("hidden");
+      loginContainer.classList.add("hidden");
       loadAdminData();
     } catch(e){ messageDiv.textContent=e.message; }
   } else {
     try {
       const snapshot = await get(child(ref(db), `students/${id}`));
       if(snapshot.exists() && snapshot.val().approved){
+        resetLoginForm();
         loginContainer.classList.add("hidden");
         loadStudentPanel(snapshot.val());
       } else messageDiv.textContent="Student not found or not approved";
@@ -156,11 +160,12 @@ function loadStudentPanel(student) {
   });
 }
 
-function hideAllSections() {
-  profileSection.classList.add("hidden");
-  tuitionSection.classList.add("hidden");
-  breakSection.classList.add("hidden");
-}
+// LOGOUTS
+studentLogoutBtn.addEventListener("click", ()=>{ studentPanel.classList.add("hidden"); loginContainer.classList.remove("hidden"); messageDiv.textContent="Logged out successfully"; });
+adminLogoutBtn.addEventListener("click", async ()=>{ await auth.signOut(); adminPanel.classList.add("hidden"); loginContainer.classList.remove("hidden"); messageDiv.textContent="Admin logged out successfully"; });
+
+function hideAllSections() { profileSection.classList.add("hidden"); tuitionSection.classList.add("hidden"); breakSection.classList.add("hidden"); }
+function resetLoginForm(){ userID.value=""; document.getElementById("adminEmail").value=""; document.getElementById("adminPassword").value=""; messageDiv.textContent=""; }
 
 // ADMIN PANEL
 tabBtns.forEach(btn => {
@@ -182,6 +187,7 @@ async function loadAdminData() {
 
   const students = snapshot.val();
   Object.values(students).forEach(student => {
+    // Pending
     if(!student.approved){
       const li = document.createElement("li");
       li.textContent = `${student.name} (${student.id}) `;
@@ -194,6 +200,7 @@ async function loadAdminData() {
       li.appendChild(approveBtn);
       pendingStudentsList.appendChild(li);
     }
+    // Approved by class
     if(student.approved && classLists[student.class]){
       const li = document.createElement("li");
       li.textContent = `${student.name} (${student.id})`;

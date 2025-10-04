@@ -1,89 +1,128 @@
-/* ======================================================= */
-/* --- GLOBAL STYLES --- */
-/* ======================================================= */
+/* =======================================================
+   GLOBAL STYLES
+======================================================= */
 * {
-  box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: #f4f6fa;
-  color: #333;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: #f4f6fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
 }
 
-h2 {
-  text-align: center;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+.container {
+  width: 100%;
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 15px;
 }
 
-/* ======================================================= */
-/* --- PAGE CONTAINERS --- */
-/* ======================================================= */
+h1 {
+  text-align: center;
+  font-size: 26px;
+  color: #111827;
+  margin-bottom: 25px;
+}
+
+/* =======================================================
+   PAGE CARDS
+======================================================= */
 .page {
-  display: none;
-  max-width: 420px;
-  margin: 40px auto;
-  background: #fff;
-  padding: 25px 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 25px 30px;
+  display: none;
+  animation: fadeIn 0.3s ease;
 }
 
 .page.active,
 .page:not(.hidden) {
-  display: block;
+  display: block;
 }
 
 .hidden {
-  display: none !important;
+  display: none !important;
 }
 
-/* ======================================================= */
-/* --- INPUTS & FORMS --- */
-/* ======================================================= */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =======================================================
+   HEADINGS
+======================================================= */
+h2 {
+  text-align: center;
+  font-size: 22px;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+h3 {
+  font-size: 18px;
+  margin-top: 25px;
+  color: #1f2937;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 5px;
+}
+
+/* =======================================================
+   INPUTS
+======================================================= */
 input[type="text"],
 input[type="number"],
 input[type="password"],
 input[type="email"],
 select {
-  width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: border-color 0.2s ease;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: all 0.2s ease;
 }
 
 input:focus {
-  outline: none;
-  border-color: #6366f1;
+  border-color: #6366f1;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
-/* ======================================================= */
-/* --- BUTTONS --- */
-/* ======================================================= */
+/* =======================================================
+   BUTTONS
+======================================================= */
 button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.25s ease, transform 0.1s ease;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.25s ease, transform 0.1s ease;
 }
 
 button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px);
 }
 
+button + button {
+  margin-top: 8px;
+}
+
+/* --- Color Utility Buttons --- */
 .bg-blue-500 { background-color: #3b82f6; color: white; }
 .bg-blue-500:hover { background-color: #2563eb; }
 
@@ -99,94 +138,126 @@ button:hover {
 .bg-indigo-500 { background-color: #6366f1; color: white; }
 .bg-indigo-500:hover { background-color: #4f46e5; }
 
-button + button {
-  margin-left: 6px;
+/* =======================================================
+   LINKS & TEXTS
+======================================================= */
+a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 500;
 }
 
-/* ======================================================= */
-/* --- LISTS --- */
-/* ======================================================= */
+a:hover {
+  text-decoration: underline;
+}
+
+p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* =======================================================
+   LISTS & ITEMS
+======================================================= */
 ul {
-  list-style: none;
-  padding: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 li {
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  background: #f9fafb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  background-color: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  border-left: 4px solid transparent;
+  transition: background-color 0.2s ease;
 }
 
-/* Border color markers (admin fee list) */
+li:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- Status color borders --- */
 .border-l-4 { border-left: 4px solid transparent; }
 .border-red-500 { border-left-color: #ef4444; }
 .border-green-500 { border-left-color: #10b981; }
 .border-orange-500 { border-left-color: #f97316; }
 
-/* ======================================================= */
-/* --- STATUS COLORS --- */
-/* ======================================================= */
+/* =======================================================
+   STATUS LABELS
+======================================================= */
 .status-paid {
-  background-color: #d1fae5;
-  color: #065f46;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .status-unpaid {
-  background-color: #fee2e2;
-  color: #991b1b;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 .status-break {
-  background-color: #ffedd5;
-  color: #9a3412;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #ffedd5;
+  color: #9a3412;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 13px;
 }
 
-/* ======================================================= */
-/* --- DASHBOARD / ADMIN --- */
-/* ======================================================= */
+/* =======================================================
+   ADMIN & DASHBOARD SECTIONS
+======================================================= */
 #studentFees li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 #monthlyFees li button {
-  margin-top: 5px;
+  margin-top: 5px;
 }
 
 #pendingStudents li,
 #approvedStudents li {
-  justify-content: space-between;
+  justify-content: space-between;
 }
 
-select#selectStudentFees {
-  margin-top: 10px;
-}
-
-/* ======================================================= */
-/* --- RESPONSIVE --- */
-/* ======================================================= */
+/* =======================================================
+   RESPONSIVE DESIGN
+======================================================= */
 @media (max-width: 480px) {
-  .page {
-    margin: 20px;
-    padding: 20px;
-  }
-  button {
-    width: 100%;
-    margin-top: 8px;
-  }
+  .container {
+    padding: 0 10px;
+  }
+
+  .page {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  button {
+    font-size: 14px;
+    padding: 9px 12px;
+  }
 }

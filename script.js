@@ -41,11 +41,13 @@ async function initializeAppAndAuth() {
         await setPersistence(auth, browserSessionPersistence);
         
         // CRITICAL: Sign in anonymously to ensure an auth.uid exists for read/write permissions
+        // This is necessary for both student login/read access and general registration/break requests.
         await signInAnonymously(auth); 
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserId = user.uid;
+                // This line displays the UID for debugging purposes (e.g., hk2w8EhSBMZSDSFhck1MitjFLVb2)
                 document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId}`; 
                 checkLoginStatus();
             } else {
@@ -68,7 +70,7 @@ function getBreakRequestRef(studentId) { return ref(db, `${RTDB_ROOT_PATH}/break
 
 
 // ====================================================================
-// --- Login and Registration Logic ---
+// --- View Switching and Auth Logic (Retained) ---
 // ====================================================================
 
 window.showLogin = function () {
@@ -144,7 +146,6 @@ window.login = async function () {
         }
     } catch(e) {
         console.error("Login failed unexpectedly:", e);
-        // This is where a PERMISSION_DENIED on the initial admin/student login often shows up
         errorElement.textContent = `Login failed. Check internet connection or Admin setup. Error: ${e.message}`;
     }
 }
@@ -214,7 +215,6 @@ window.registerStudent = async function () {
         return;
     }
     
-    // ... (Validation logic for phone/ID generation retained) ...
     const rollString = studentRoll.padStart(3, '0');
     const year = new Date().getFullYear().toString().substring(2);
     const classId = studentClass.padStart(2, '0');
@@ -247,10 +247,16 @@ window.registerStudent = async function () {
 }
 
 // ====================================================================
-// --- Admin Panel Functions ---
+// --- Admin Panel Functions (Approved Student List Fix) ---
 // ====================================================================
 
 async function initializeAdminPanel() {
+    // CRITICAL: Ensure Admin is authenticated before setting up listeners that rely on read permissions
+    if (!auth.currentUser || !localStorage.getItem('isAdmin')) {
+        console.error("Admin not fully authenticated or local storage status is missing.");
+        return;
+    }
+
     // RTDB Listener for pending students
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('pending')), (snapshot) => {
         const pendingDocs = [];
@@ -260,16 +266,61 @@ async function initializeAdminPanel() {
         renderPendingStudents(pendingDocs);
     });
 
-    // RTDB Listener for approved students - this populates the selector list
+    // RTDB Listener for approved students - This is the core data load for the list.
     onValue(query(getStudentsRef(), orderByChild('status'), equalTo('approved')), (snapshot) => {
         allApprovedStudents = [];
         snapshot.forEach(childSnapshot => {
             allApprovedStudents.push({ id: childSnapshot.key, ...childSnapshot.val() });
         });
-        // CRITICAL: Ensure this is called even if the list is empty, 
-        // as the list might fail to load due to rules
+        // This function populates the dropdown list
         renderStudentSelector(allApprovedStudents);
     });
+}
+
+function renderPendingStudents(pendingStudents) {
+    const ul = document.getElementById('pendingStudentsList');
+    ul.innerHTML = '';
+    const pendingCountSpan = document.getElementById('pendingCount');
+
+    pendingCountSpan.textContent = `(${pendingStudents.length})`;
+
+    if (pendingStudents.length === 0) {
+        ul.innerHTML = '<p class="text-gray-500">No pending students</p>';
+        return;
+    }
+
+    pendingStudents.forEach(data => {
+        const li = document.createElement('li');
+        li.classList.add('flex', 'justify-between', 'items-center', 'bg-white', 'p-3', 'mb-2');
+        li.innerHTML = `
+            <div>
+                <strong>${data.name}</strong> (ID: ${data.id})<br>
+                <small>Class: ${data.class}, Phone: ${data.guardianPhone}</small>
+            </div>
+            <button class="bg-green-500 hover:bg-green-600 text-white p-2 rounded text-sm" onclick="approveStudent('${data.id}')">Approve</button>
+        `;
+        ul.appendChild(li);
+    });
+}
+
+function renderStudentSelector(students) {
+    const selector = document.getElementById('studentSelector');
+    const selectedId = selector.value; 
+    selector.innerHTML = '<option value="">Select Student...</option>';
+
+    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.name} (ID: ${student.id})`;
+        if (student.id === selectedId) {
+            option.selected = true;
+        }
+        selector.appendChild(option);
+    });
+
+    if (selectedId) {
+        loadMonthlyFees();
+    }
 }
 
 window.approveStudent = async function (studentId) {
@@ -307,7 +358,7 @@ window.markPaid = async function (studentId, monthKey, method) {
 
 
 // ====================================================================
-// --- Student Panel Functions ---
+// --- Student Panel Functions (Break Request Fix) ---
 // ====================================================================
 
 async function initializeStudentPanel(studentData) {
@@ -348,25 +399,12 @@ window.requestBreak = async function (studentId) {
     }
 }
 
-// ... (Rendering functions like renderFeeStatus, renderAdminFeeManagement, etc. are omitted for brevity but remain in the full working code) ...
-function renderStudentSelector(students) {
-    const selector = document.getElementById('studentSelector');
-    const selectedId = selector.value; 
-    selector.innerHTML = '<option value="">Select Student...</option>';
-
-    students.sort((a, b) => a.name.localeCompare(b.name)).forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = `${student.name} (ID: ${student.id})`;
-        if (student.id === selectedId) {
-            option.selected = true;
-        }
-        selector.appendChild(option);
-    });
-
-    if (selectedId) {
-        loadMonthlyFees();
-    }
-}
+// ... (Other rendering functions are needed but omitted here for brevity and focus on core logic) ...
+// The following functions must be present in your full script:
+// - renderFeeStatus
+// - loadMonthlyFees
+// - renderAdminFeeManagement
+// - openPaymentModal
+// - markBreak
 
 window.onload = initializeAppAndAuth;

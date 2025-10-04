@@ -33,6 +33,10 @@ const months = [
 // 2. AUTHENTICATION AND NAVIGATION
 // ====================================================================
 
+/**
+ * Ensures the correct panel is shown on load based on authentication status.
+ * This is why your initial view is the login page when nobody is signed in.
+ */
 auth.onAuthStateChanged(user => {
     if (user) {
         const isAdmin = user.providerData.some(p => p.providerId === 'password');
@@ -45,9 +49,11 @@ auth.onAuthStateChanged(user => {
                 fetchStudentData(currentStudentId);
             } else {
                 auth.signOut();
+                showAuthContainer();
             }
         }
     } else {
+        // This runs when the user is signed out, showing the login page (1000008430.jpg)
         showAuthContainer();
     }
 });
@@ -83,6 +89,7 @@ async function handleStudentLogin() {
     }
 
     try {
+        // Sign in anonymously and check if the student ID is valid and approved
         await auth.signInAnonymously();
         
         const studentRef = ref(db, `students/${studentIdInput}`);
@@ -224,9 +231,6 @@ function filterStudents() {
 
 /**
  * Opens the modal for payment or break reason input.
- * @param {string} studentId 
- * @param {string} monthKey 
- * @param {string} action 'paid' or 'break'
  */
 function openActionModal(studentId, monthKey, action) {
     if (!checkAdminWritePermission()) return;
@@ -343,6 +347,7 @@ async function renderAdminFeeManagement(studentId) {
             }
 
             if (status === "PENDING") {
+                // Using the new modal function
                 actionButtons = `
                     <button class="fee-action-btn" onclick="openActionModal('${studentId}', '${month}', 'paid')">Mark Paid</button>
                     <button class="fee-action-btn" onclick="openActionModal('${studentId}', '${month}', 'break')">Mark Break</button>
@@ -374,10 +379,6 @@ async function renderAdminFeeManagement(studentId) {
 
 /**
  * Generic function to mark fee status.
- * @param {string} studentId 
- * @param {string} monthKey 
- * @param {string} status 'PAID' or 'BREAK'
- * @param {object} data Specific fields like {method} or {reason}
  */
 async function markFeeStatus(studentId, monthKey, status, data = {}) {
     if (!checkAdminWritePermission()) return;
@@ -518,7 +519,10 @@ async function handleRegistration() {
         
         // Clear form
         document.getElementById('reg-name').value = '';
-        // ... clear other form fields
+        document.getElementById('reg-guardian-phone').value = '';
+        document.getElementById('reg-class').value = '';
+        document.getElementById('reg-roll').value = '';
+
 
     } catch (error) {
         console.error("Registration Error:", error);

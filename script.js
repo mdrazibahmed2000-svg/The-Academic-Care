@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, get, ServerValue } from "firebase/database";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
-// Your web app's Firebase configuration (from your screenshot)
+// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
@@ -63,7 +63,7 @@ function setupViewSwitching() {
     const showLoginLink = document.getElementById('showLogin');
     const goToLoginAfterReg = document.getElementById('goToLoginAfterReg');
     
-    // Landing Page buttons handlers
+    // Landing Page buttons handlers (FIXED: Ensuring listeners are attached)
     const startLoginBtn = document.getElementById('startLoginBtn');
     const startRegisterBtn = document.getElementById('startRegisterBtn');
 
@@ -87,7 +87,7 @@ function setupViewSwitching() {
         showView(loginView);
     });
     
-    // Default view is handled by onAuthStateChanged below, but we start on landing if not logged in.
+    // Default view is the landing page unless the user is already logged in
     if (!auth.currentUser) {
          showView(landingView);
     }
@@ -215,11 +215,13 @@ function handleLogin() {
             showView(loginView); 
             await displayStatus(user.uid);
         } else {
-            // User signed out: Default to landing view or show login form if that's the current view
+            // User signed out: Default to landing view
             if (loginView && !loginView.classList.contains('hidden')) {
+                // If on the login view, just show the login form again
                 if (loginForm) loginForm.classList.remove('hidden');
                 if (statusArea) statusArea.classList.add('hidden');
             } else {
+                // Return to the initial landing page
                 showView(landingView);
             }
         }
@@ -238,7 +240,6 @@ async function displayStatus(uid) {
 
     try {
         const registrationsRef = ref(database, 'registrations');
-        // NOTE: The security rules ensure only the authenticated user's record is visible here.
         const snapshot = await get(registrationsRef); 
 
         if (snapshot.exists()) {

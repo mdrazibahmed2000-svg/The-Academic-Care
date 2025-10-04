@@ -24,20 +24,34 @@
             padding: 5px 10px;
             border-radius: 4px;
         }
+        
+        /* Style for the initial landing buttons */
+        #landingView button {
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            padding: 15px 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>The Academic Care</h1>
         
-        <div class="nav-links">
+        <div class="nav-links hidden" id="internalNav">
             <a href="#" id="showRegister">Registration</a> | 
             <a href="#" id="showLogin">Login/Status</a>
         </div>
         
-        <hr>
+        <hr class="hidden" id="navDivider">
 
-        <div id="registrationView">
+        <div id="landingView">
+            <h2>Welcome to The Academic Care Portal</h2>
+            <button id="startLoginBtn" class="primary-button">Login to Check Status</button>
+            <button id="startRegisterBtn" class="primary-button">New Student Registration</button>
+        </div>
+
+        <div id="registrationView" class="hidden">
             <h2>Student Registration</h2>
             <form id="registrationForm">
                 <div class="form-group">

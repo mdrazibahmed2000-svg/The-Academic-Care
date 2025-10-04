@@ -340,7 +340,7 @@ function renderStudentFeeTable(tuitionStatus) {
     tuitionTableBody.innerHTML = '';
 
     const currentDate = new Date();
-    // October is month index 9 (0-indexed)
+    // Month index (0=Jan, 9=Oct, 11=Dec)
     const currentMonthIndex = currentDate.getMonth(); 
     
     MONTHS.forEach((month, index) => {
@@ -350,7 +350,6 @@ function renderStudentFeeTable(tuitionStatus) {
         let dateText = '---'; 
 
         // Check if the month is currently due (current month or a past month)
-        // NOTE: This comparison is reliable for a Jan-Dec academic year.
         const isMonthDueOrPast = (index <= currentMonthIndex);
         
         // Determine Status and Class
@@ -406,6 +405,7 @@ async function loadBreakRequestForm(studentId) {
     let lastPaidMonthIndex = -1; 
     
     // 1. Find the index of the last month that was explicitly PAID.
+    // This determines the start of the unpaid/unrecorded period.
     MONTHS.forEach((month, index) => {
         const data = tuitionStatus[month];
         if (data && data.paid === true) {
@@ -414,10 +414,10 @@ async function loadBreakRequestForm(studentId) {
     });
 
     // 2. Determine the earliest possible start month for the break.
-    // This is the month immediately following the last paid month.
+    // It is the month immediately following the last paid month.
     let earliestStartMonthIndex = lastPaidMonthIndex + 1;
     
-    // If the lastPaidMonthIndex is -1 (no payments), start from January (index 0).
+    // If no payments found, start from January (index 0).
     if (lastPaidMonthIndex === -1) {
         earliestStartMonthIndex = 0;
     }
@@ -432,7 +432,7 @@ async function loadBreakRequestForm(studentId) {
     const startMonthName = MONTHS[earliestStartMonthIndex];
     
     // 4. Populate the Start Month Select 
-    // Add all available months starting from the earliest calculated index.
+    // Add all available months (Unpaid/Unrecorded) starting from the earliest calculated index.
     for (let i = earliestStartMonthIndex; i < 12; i++) {
         breakStartMonthSelect.add(new Option(`${MONTHS[i]} (${currentYear})`, MONTHS[i]));
     }

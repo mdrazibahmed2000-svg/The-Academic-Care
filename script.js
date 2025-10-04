@@ -188,7 +188,6 @@ async function handleStudentLogin(studentId) {
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
-        // If snapshot.exists() is false, it means the ID is wrong, OR the security rule denied access.
         errorElement.textContent = `Student ID '${studentId}' not found. Please register or verify the ID.`;
         return;
     }
@@ -339,22 +338,35 @@ window.approveStudent = async function (studentId) {
     }
 }
 
+// CRITICAL FIX: Added permission check and improved error handling for Admin writes
 window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = ref(getFeesRef(studentId), monthKey);
     
+    // Explicitly check if the user is authenticated as an Admin with a password token
+    const isAdminAuth = auth.currentUser && 
+                        localStorage.getItem('isAdmin') === 'true' && 
+                        auth.currentUser.providerData.some(p => p.providerId === 'password');
+
+    if (!isAdminAuth) {
+        alert("PERMISSION DENIED: Fee mark failed. You must be logged in as an Admin using the email/password to update fee records.");
+        return;
+    }
+
     try {
         await set(feeRef, {
             status: 'paid',
-            paymentMethod: method,
+            paymentMethod: method, 
             paymentDate: Date.now(),
             recordedBy: auth.currentUser.uid 
         });
         
-        alert(`Successfully marked ${monthKey} for student ${studentId} as paid.`);
+        // Success: The onValue listener will automatically refresh the UI.
+        alert(`Successfully marked ${monthKey} for student ${studentId} as paid via ${method}.`);
         
     } catch (e) {
         console.error("Error recording payment:", e);
-        alert(`ERROR: Failed to record payment for ${monthKey}. Details: ${e.message}`);
+        // Better error message to guide admin to check rules
+        alert(`DATABASE WRITE ERROR: Failed to record payment for ${monthKey}. Check Firebase Security Rules or internet connection. Error: ${e.message}`);
     }
 }
 

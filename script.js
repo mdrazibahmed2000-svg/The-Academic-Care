@@ -5,11 +5,11 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, ref, set, get, ServerValue } from "firebase/database";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration (using your confirmed data)
 const firebaseConfig = {
     apiKey: "AIzaSyCHMl5grIOPL5NbQnUMDT5y2U_BSacoXh8",
     authDomain: "the-academic-care.firebaseapp.com",
-    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app",
+    databaseURL: "https://the-academic-care-default-rtdb.asia-southeast1.firebasedatabase.app", // Confirmed URL
     projectId: "the-academic-care",
     storageBucket: "the-academic-care.firebasestorage.app",
     messagingSenderId: "728354914429",
@@ -22,15 +22,61 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
 
+// Global view elements
+const registrationView = document.getElementById('registrationView');
+const loginView = document.getElementById('loginView');
+const registerResultMessage = document.getElementById('registerResultMessage');
+
 
 // ====================================================================
-// 2. REGISTRATION LOGIC (Runs on index.html)
+// 2. VIEW SWITCHING LOGIC (For Single-Page App behavior)
+// ====================================================================
+function showView(viewElement) {
+    if (registrationView) registrationView.classList.add('hidden');
+    if (loginView) loginView.classList.add('hidden');
+    if (registerResultMessage) registerResultMessage.classList.add('hidden');
+    
+    if (viewElement) viewElement.classList.remove('hidden');
+}
+
+function setupViewSwitching() {
+    const showRegisterLink = document.getElementById('showRegister');
+    const showLoginLink = document.getElementById('showLogin');
+    const goToLoginAfterReg = document.getElementById('goToLoginAfterReg');
+
+    if (showRegisterLink) {
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showView(registrationView);
+        });
+    }
+
+    if (showLoginLink) {
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showView(loginView);
+        });
+    }
+    
+    if (goToLoginAfterReg) {
+        goToLoginAfterReg.addEventListener('click', (e) => {
+            e.preventDefault();
+            showView(loginView);
+        });
+    }
+
+    // Default: Start on the registration view
+    showView(registrationView); 
+}
+
+
+// ====================================================================
+// 3. REGISTRATION LOGIC
 // ====================================================================
 function handleRegistration() {
     const form = document.getElementById('registrationForm');
-    if (!form) return; // Only run if on index.html
+    if (!form) return; 
 
-    const resultMessage = document.getElementById('resultMessage');
     const registerBtn = document.getElementById('registerBtn');
 
     form.addEventListener('submit', async function(event) {
@@ -66,8 +112,8 @@ function handleRegistration() {
                 class: studentClass,
                 roll: formattedRoll,
                 guardianNo: guardianNo,
-                email: email, // Store email for admin reference
-                uid: userUID, // Link to the Firebase Auth UID
+                email: email,
+                uid: userUID,
                 status: 'Pending', 
                 registeredAt: ServerValue.TIMESTAMP 
             };
@@ -79,7 +125,7 @@ function handleRegistration() {
             document.getElementById('studentID').innerHTML = `Your **Student ID** is: <strong>${studentID}</strong>`;
             
             form.classList.add('hidden');
-            resultMessage.classList.remove('hidden');
+            registerResultMessage.classList.remove('hidden');
             alert("Registration successful! Your account is created, and your application is pending approval.");
 
         } catch (error) {
@@ -98,7 +144,7 @@ function handleRegistration() {
 }
 
 // ====================================================================
-// 3. LOGIN & STATUS CHECK LOGIC (Runs on login.html)
+// 4. LOGIN & STATUS CHECK LOGIC
 // ====================================================================
 function handleLogin() {
     const loginForm = document.getElementById('loginForm');
@@ -106,9 +152,8 @@ function handleLogin() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    if (!loginForm) return; // Only run if on login.html
+    if (!loginForm) return; 
 
-    // Attempt to log in
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
@@ -119,7 +164,7 @@ function handleLogin() {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // onAuthStateChanged will handle the rest
+            // onAuthStateChanged will handle the UI update
         } catch (error) {
             alert(`Login Failed: ${error.message}`);
         } finally {
@@ -128,28 +173,29 @@ function handleLogin() {
         }
     });
 
-    // Handle logout
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            await signOut(auth);
-            // onAuthStateChanged will handle the UI update
-        } catch (error) {
-            console.error("Logout error:", error);
-        }
-    });
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Logout error:", error);
+            }
+        });
+    }
 
-    // Handle state change (Login/Logout)
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // User is signed in
+            // User is signed in: Show Status
             loginForm.classList.add('hidden');
-            statusArea.classList.remove('hidden');
+            if (statusArea) statusArea.classList.remove('hidden');
+            showView(loginView); // Ensure the login view (which contains status) is visible
             await displayStatus(user.uid);
         } else {
-            // User is signed out
-            loginForm.classList.remove('hidden');
-            statusArea.classList.add('hidden');
-            document.getElementById('registrationStatus').textContent = "";
+            // User is signed out: Show Login Form
+            if (loginForm) loginForm.classList.remove('hidden');
+            if (statusArea) statusArea.classList.add('hidden');
+            // If we are currently on the registration page, don't force a switch
+            // If we are on the login page, the login form should be visible
         }
     });
 }
@@ -165,28 +211,23 @@ async function displayStatus(uid) {
     adminMessage.textContent = "";
 
     try {
-        // Find the registration record linked to this UID
         const registrationsRef = ref(database, 'registrations');
         const snapshot = await get(registrationsRef);
 
         if (snapshot.exists()) {
             let registrationFound = false;
             
-            // Iterate through all registrations to find the one matching the user's UID
             snapshot.forEach((childSnapshot) => {
                 const regData = childSnapshot.val();
                 if (regData.uid === uid) {
-                    // Match found!
                     registrationFound = true;
                     
-                    const status = regData.status || 'Pending'; // Default to Pending
+                    const status = regData.status || 'Pending';
                     
-                    // Update display
                     studentNameDisplay.textContent = regData.name;
                     studentIDDisplay.textContent = regData.id;
                     statusElement.textContent = status.toUpperCase();
                     
-                    // Apply styling based on status
                     statusElement.classList.remove('pending', 'approved');
                     if (status.toLowerCase() === 'pending') {
                         statusElement.classList.add('pending');
@@ -195,7 +236,6 @@ async function displayStatus(uid) {
                         statusElement.classList.add('approved');
                         adminMessage.textContent = "Congratulations! Your registration has been approved. You can now access all coaching resources.";
                     } else {
-                        // For statuses like 'Rejected', 'On Hold', etc.
                         statusElement.classList.add('pending'); 
                         adminMessage.textContent = regData.adminNote || "Your registration status is not standard. Please contact 'The Academic Care' directly.";
                     }
@@ -204,12 +244,12 @@ async function displayStatus(uid) {
 
             if (!registrationFound) {
                 statusElement.textContent = "No Registration Found";
-                adminMessage.textContent = "Please ensure you have completed the registration form on the main page.";
+                adminMessage.textContent = "Please complete the registration form.";
                 studentIDDisplay.textContent = "N/A";
             }
 
         } else {
-            statusElement.textContent = "Database Error: No registrations found.";
+            statusElement.textContent = "Error: No registrations found in the database.";
         }
     } catch (error) {
         console.error("Error fetching status:", error);
@@ -219,9 +259,13 @@ async function displayStatus(uid) {
 
 
 // ====================================================================
-// 4. INITIALIZATION
+// 5. INITIALIZATION
 // ====================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // Set up the single-page application navigation
+    setupViewSwitching();
+    
+    // Initialize the main Firebase handlers
     handleRegistration();
     handleLogin();
 });

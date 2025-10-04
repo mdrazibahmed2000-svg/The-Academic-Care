@@ -1,103 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Academic Care</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Academic Care Portal</title>
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
+    <div class="container">
+        <h1>The Academic Care</h1>
 
-<!-- LOGIN PAGE -->
-<div class="container" id="loginContainer">
-  <h1>The Academic Care</h1>
-  <input type="text" id="userID" placeholder="Enter Student ID or 'admin'">
+        <div id="loginContainer">
+            <input type="text" id="userID" placeholder="Student ID or 'admin'">
+            
+            <div id="adminLoginFields" class="hidden">
+                <input type="email" id="adminEmail" placeholder="Admin Email">
+                <input type="password" id="adminPassword" placeholder="Admin Password">
+            </div>
 
-  <!-- Admin login fields -->
-  <div id="adminLoginFields" class="hidden">
-    <input type="email" id="adminEmail" placeholder="Admin Email">
-    <input type="password" id="adminPassword" placeholder="Admin Password">
-  </div>
+            <button id="loginBtn">Login</button>
+            <button id="applyBtn">Apply for Registration</button>
+            <div id="message"></div>
+        </div>
 
-  <button id="loginBtn">Login</button>
-  <button id="applyBtn">Apply for Registration</button>
-  <div id="message"></div>
-</div>
+        <div id="registrationContainer" class="hidden">
+            <h2>New Student Registration</h2>
+            <form id="registrationForm">
+                <input type="text" id="name" placeholder="Full Name" required>
+                <select id="class" required>
+                    <option value="" disabled selected>Select Class (6-10)</option>
+                    <option value="06">Class 06</option>
+                    <option value="07">Class 07</option>
+                    <option value="08">Class 08</option>
+                    <option value="09">Class 09</option>
+                    <option value="10">Class 10</option>
+                </select>
+                <input type="text" id="roll" placeholder="Roll Number (e.g., 001)" maxlength="3" required>
+                <input type="tel" id="guardian" placeholder="Guardian Phone Number" required>
+                <button type="submit">Submit Registration</button>
+                <p id="studentIDDisplay" style="margin-top: 15px; color: #333;"></p>
+                <button type="button" id="backToLogin">Back to Login</button>
+            </form>
+        </div>
 
-<!-- STUDENT REGISTRATION -->
-<div class="container hidden" id="registrationContainer">
-  <h2>Student Registration</h2>
-  <form id="registrationForm">
-    <input type="text" id="name" placeholder="Student Name" required>
-    <input type="text" id="class" placeholder="Class (6-10)" required>
-    <input type="text" id="roll" placeholder="Roll" required>
-    <input type="text" id="guardian" placeholder="Guardian Number" required>
-    <button type="submit">Submit Registration</button>
-  </form>
-  <button id="backToLogin">Back to Login</button>
-  <div id="studentIDDisplay"></div>
-</div>
+        <div id="studentPanel" class="hidden">
+            <h2>Student Portal</h2>
+            <div class="tabs">
+                <button class="tabBtn active" data-tab="profile" id="profileBtn">My Profile</button>
+                <button class="tabBtn" data-tab="tuition" id="tuitionBtn">Tuition Fee Status</button>
+                <button class="tabBtn" data-tab="break" id="breakBtn">Request Break</button>
+            </div>
 
-<!-- STUDENT PANEL -->
-<div class="container hidden" id="studentPanel">
-  <h1>The Academic Care</h1>
-  <p>Academic Year: 2025</p>
-  <button id="profileBtn">My Profile</button>
-  <button id="tuitionBtn">Tuition Fee Status</button>
-  <button id="breakBtn">Request Break</button>
-  <button id="studentLogoutBtn" class="logoutBtn">Logout</button>
+            <div id="profile" class="tabContent">
+                <h3>Profile Details</h3>
+            </div>
 
-  <div id="profile" class="hidden"></div>
-  <div id="tuition" class="hidden">
-    <table id="tuitionTable">
-      <thead>
-        <tr><th>Month</th><th>Status</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-  <div id="break" class="hidden">
-    <input type="number" id="breakMonths" placeholder="Number of months">
-    <button id="requestBreakBtn">Request Break</button>
-    <div id="breakMessage"></div>
-  </div>
-</div>
+            <div id="tuition" class="tabContent hidden">
+                <h3>Monthly Fee Status</h3>
+                <table>
+                    <thead>
+                        <tr><th>Month</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="tuitionTable">
+                        </tbody>
+                </table>
+            </div>
 
-<!-- ADMIN PANEL -->
-<div class="container hidden" id="adminPanel">
-  <h1>Admin Panel</h1>
-  <button id="adminLogoutBtn" class="logoutBtn">Logout</button>
+            <div id="break" class="tabContent hidden">
+                <h3>Request Break</h3>
+                
+                <div id="breakFormContent">
+                    <label for="breakStartMonth">Select break start month:</label>
+                    <select id="breakStartMonth" required></select>
+                    
+                    <label for="breakDuration">Select duration (in months):</label>
+                    <select id="breakDuration" required></select>
+                    
+                    <button id="requestBreakBtn">Request Break</button>
+                    <p id="breakMessage" style="margin-top: 10px;"></p>
+                </div>
+            </div>
+            <button id="studentLogoutBtn" style="margin-top: 20px;">Logout</button>
+        </div>
 
-  <div class="tabs">
-    <button class="tabBtn active" data-tab="pending">Pending Students</button>
-    <button class="tabBtn" data-tab="class06">Class 06</button>
-    <button class="tabBtn" data-tab="class07">Class 07</button>
-    <button class="tabBtn" data-tab="class08">Class 08</button>
-    <button class="tabBtn" data-tab="class09">Class 09</button>
-    <button class="tabBtn" data-tab="class10">Class 10</button>
-  </div>
+        <div id="adminPanel" class="hidden">
+            <h2>Admin Panel</h2>
+            <button id="adminLogoutBtn">Logout</button>
 
-  <div id="pending" class="tabContent">
-    <h3>Pending Students</h3>
-    <ul id="pendingStudents"></ul>
-  </div>
+            <div class="tabs" style="margin-top: 20px;">
+                <button class="tabBtn active" data-tab="pending">Pending Students</button>
+                <button class="tabBtn" data-tab="class06">Class 06</button>
+                <button class="tabBtn" data-tab="class07">Class 07</button>
+                <button class="tabBtn" data-tab="class08">Class 08</button>
+                <button class="tabBtn" data-tab="class09">Class 09</button>
+                <button class="tabBtn" data-tab="class10">Class 10</button>
+                <button class="tabBtn" data-tab="studentDetail" style="display: none;">Student Detail</button>
+            </div>
 
-  <div id="class06" class="tabContent hidden"><ul id="class06Students"></ul></div>
-  <div id="class07" class="tabContent hidden"><ul id="class07Students"></ul></div>
-  <div id="class08" class="tabContent hidden"><ul id="class08Students"></ul></div>
-  <div id="class09" class="tabContent hidden"><ul id="class09Students"></ul></div>
-  <div id="class10" class="tabContent hidden"><ul id="class10Students"></ul></div>
+            <div id="pending" class="tabContent">
+                <h3>Pending Students</h3>
+                <ul id="pendingStudents">
+                    </ul>
+            </div>
 
-  <div id="studentDetail" class="tabContent hidden">
-    <h3>Student Details</h3>
-    <div id="studentInfo"></div>
-    <table>
-      <thead><tr><th>Month</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody id="studentTuitionTable"></tbody>
-    </table>
-  </div>
-</div>
+            <div id="class06" class="tabContent hidden"><h3>Class 06 Students</h3><ul id="class06Students"></ul></div>
+            <div id="class07" class="tabContent hidden"><h3>Class 07 Students</h3><ul id="class07Students"></ul></div>
+            <div id="class08" class="tabContent hidden"><h3>Class 08 Students</h3><ul id="class08Students"></ul></div>
+            <div id="class09" class="tabContent hidden"><h3>Class 09 Students</h3><ul id="class09Students"></ul></div>
+            <div id="class10" class="tabContent hidden"><h3>Class 10 Students</h3><ul id="class10Students"></ul></div>
+            
+            <div id="studentDetail" class="tabContent hidden">
+                <h3>Student Detail</h3>
+                <div id="studentInfo"></div>
+                <h4>Tuition Management</h4>
+                <table>
+                    <thead>
+                        <tr><th>Month</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="studentTuitionTable">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-<script type="module" src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>

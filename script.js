@@ -14,7 +14,6 @@ var db = firebase.database();
 var auth = firebase.auth(); 
 var currentStudent = "";
 
-// Set your Admin Email here (must match the user in Firebase Auth and Security Rules)
 const ADMIN_EMAIL = 'your-admin-email@example.com'; // <-- REPLACE THIS
 
 // ===================== DOM Elements and Navigation ===================== //
@@ -29,7 +28,7 @@ const authError = document.getElementById("loginError");
 // Utility function for clean page switching
 function showPage(pageElement) {
   [loginPage, registerPage, studentDashboard, adminPanel].forEach(p => {
-    if (p) { // Check if element exists before trying to access classList
+    if (p) {
       p.classList.remove("active");
       p.classList.add("hidden");
     }
@@ -46,7 +45,7 @@ function showRegister() {
 
 function showLogin() {
   showPage(loginPage);
-  adminAuthFields.classList.add('hidden'); // Ensure admin fields are hidden
+  adminAuthFields.classList.add('hidden');
   idOrRoleInput.value = "";
   authError.textContent = "";
 }
@@ -55,14 +54,13 @@ function logout() {
   auth.signOut().then(() => {
     currentStudent = "";
     showLogin();
-    // Clean up database listeners
     db.ref("students").off();
   }).catch((error) => {
     console.error("Logout Error:", error);
   });
 }
 
-// Event listener to toggle admin fields (must be outside the login function)
+// **THE FIX:** This listener is now correctly placed inside app.js
 document.addEventListener('DOMContentLoaded', () => {
   if (idOrRoleInput && adminAuthFields) {
     idOrRoleInput.addEventListener('input', function() {
@@ -95,7 +93,7 @@ function registerStudent() {
   });
 }
 
-// ===================== LOGIN (MODIFIED & CORRECTED) ===================== //
+// ===================== LOGIN ===================== //
 function login() {
   const id = document.getElementById("studentId").value.trim();
   const email = document.getElementById("adminEmail").value.trim();
@@ -112,7 +110,6 @@ function login() {
 
     auth.signInWithEmailAndPassword(email, password)
       .then((userCredential) => {
-        // Check if the user is the designated admin
         if (userCredential.user.email === ADMIN_EMAIL) {
           showPage(adminPanel);
           loadAdminPanel();
@@ -125,7 +122,7 @@ function login() {
     return;
   }
 
-  // ---------- STUDENT LOGIN (FIXED: Added .catch() for error handling) ----------
+  // ---------- STUDENT LOGIN ----------
   db.ref("students/" + id).once("value").then(s => {
     if (!s.exists()) return err.textContent = "❌ Invalid ID!";
     const data = s.val();
@@ -139,7 +136,7 @@ function login() {
     loadStudentDashboard(id);
   })
   .catch(error => {
-    // THIS CATCH IS CRUCIAL. It stops the silent failure from security rules or network issues.
+    // Crucial catch for security rule failures
     console.error("Student Login Error:", error);
     err.textContent = "❌ Login failed. Check Student ID or contact admin.";
   });
@@ -260,7 +257,6 @@ auth.onAuthStateChanged((user) => {
     showPage(adminPanel);
     loadAdminPanel();
   } else if (loginPage && !loginPage.classList.contains('active')) {
-    // If not admin and not already on a page, revert to login page
     showPage(loginPage);
   }
 });

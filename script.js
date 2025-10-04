@@ -45,7 +45,8 @@ function showRegister() {
 
 function showLogin() {
   showPage(loginPage);
-  adminAuthFields.classList.add('hidden');
+  // Important: Hide admin fields when returning to login
+  adminAuthFields.classList.add('hidden'); 
   idOrRoleInput.value = "";
   authError.textContent = "";
 }
@@ -60,11 +61,13 @@ function logout() {
   });
 }
 
-// **THE FIX:** This listener is now correctly placed inside app.js
+// ✅ FIX: Listener to show/hide admin fields based on input
 document.addEventListener('DOMContentLoaded', () => {
+  // Check if the elements exist before attaching the listener
   if (idOrRoleInput && adminAuthFields) {
     idOrRoleInput.addEventListener('input', function() {
       const val = this.value.trim().toLowerCase();
+      // Toggles the 'hidden' class: hides if value is NOT 'admin', shows if it IS 'admin'
       adminAuthFields.classList.toggle('hidden', val !== 'admin');
     });
   }
@@ -136,7 +139,6 @@ function login() {
     loadStudentDashboard(id);
   })
   .catch(error => {
-    // Crucial catch for security rule failures
     console.error("Student Login Error:", error);
     err.textContent = "❌ Login failed. Check Student ID or contact admin.";
   });
@@ -237,7 +239,7 @@ function undoPayment(id, month) {
   db.ref(`students/${id}/fees/${month}`).set({ status: "UNPAID" });
 }
 
-// ===================== STUDENT DASHBOARD ===================== //
+// ===================== STUDENT DASHBOARD FUNCTIONS ===================== //
 function loadStudentDashboard(id) {
   db.ref("students/" + id + "/fees").on("value", s => {
     const fees = s.val() || {};
@@ -251,7 +253,7 @@ function loadStudentDashboard(id) {
   });
 }
 
-// Initial state check (handles admin persistence after refresh)
+// Initial state check
 auth.onAuthStateChanged((user) => {
   if (user && user.email === ADMIN_EMAIL) {
     showPage(adminPanel);

@@ -2,48 +2,48 @@
 /* --- GLOBAL STYLES --- */
 /* ======================================================= */
 * {
-  box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: #f4f6fa;
-  color: #333;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #f4f6fa;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 h2 {
-  text-align: center;
-  color: #374151;
-  border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+  text-align: center;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 /* ======================================================= */
 /* --- PAGE CONTAINERS --- */
 /* ======================================================= */
 .page {
-  display: none;
-  max-width: 420px;
-  margin: 40px auto;
-  background: #fff;
-  padding: 25px 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: none;
+  max-width: 420px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 25px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .page.active,
 .page:not(.hidden) {
-  display: block;
+  display: block;
 }
 
 .hidden {
-  display: none !important;
+  display: none !important;
 }
 
 /* ======================================================= */
@@ -52,35 +52,36 @@ h2 {
 input[type="text"],
 input[type="number"],
 input[type="password"],
+input[type="email"],
 select {
-  width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: border-color 0.2s ease;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
 }
 
 input:focus {
-  outline: none;
-  border-color: #6366f1;
+  outline: none;
+  border-color: #6366f1;
 }
 
 /* ======================================================= */
 /* --- BUTTONS --- */
 /* ======================================================= */
 button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.25s ease, transform 0.1s ease;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.25s ease, transform 0.1s ease;
 }
 
 button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px);
 }
 
 .bg-blue-500 { background-color: #3b82f6; color: white; }
@@ -99,26 +100,26 @@ button:hover {
 .bg-indigo-500:hover { background-color: #4f46e5; }
 
 button + button {
-  margin-left: 6px;
+  margin-left: 6px;
 }
 
 /* ======================================================= */
 /* --- LISTS --- */
 /* ======================================================= */
 ul {
-  list-style: none;
-  padding: 0;
+  list-style: none;
+  padding: 0;
 }
 
 li {
-  padding: 10px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  background: #f9fafb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 /* Border color markers (admin fee list) */
@@ -131,61 +132,61 @@ li {
 /* --- STATUS COLORS --- */
 /* ======================================================= */
 .status-paid {
-  background-color: #d1fae5;
-  color: #065f46;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
 }
 
 .status-unpaid {
-  background-color: #fee2e2;
-  color: #991b1b;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
 }
 
 .status-break {
-  background-color: #ffedd5;
-  color: #9a3412;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-weight: 600;
+  background-color: #ffedd5;
+  color: #9a3412;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
 }
 
 /* ======================================================= */
 /* --- DASHBOARD / ADMIN --- */
 /* ======================================================= */
 #studentFees li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 #monthlyFees li button {
-  margin-top: 5px;
+  margin-top: 5px;
 }
 
 #pendingStudents li,
 #approvedStudents li {
-  justify-content: space-between;
+  justify-content: space-between;
 }
 
 select#selectStudentFees {
-  margin-top: 10px;
+  margin-top: 10px;
 }
 
 /* ======================================================= */
 /* --- RESPONSIVE --- */
 /* ======================================================= */
 @media (max-width: 480px) {
-  .page {
-    margin: 20px;
-    padding: 20px;
-  }
-  button {
-    width: 100%;
-    margin-top: 8px;
-  }
+  .page {
+    margin: 20px;
+    padding: 20px;
+  }
+  button {
+    width: 100%;
+    margin-top: 8px;
+  }
 }

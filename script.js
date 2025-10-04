@@ -198,7 +198,7 @@ async function handleLogin() {
             const snapshot = await get(studentRef);
 
             if (!snapshot.exists()) {
-                messageDiv.textContent = `Student ID ${id} not found.`;
+                messageDiv.textContent = `Student ID ${id} not found or not yet approved.`;
                 resetLoginForm();
                 return;
             }
@@ -220,7 +220,8 @@ async function handleLogin() {
             // CRITICAL: Catch database errors (e.g., Permission Denied)
             let errorMessage = e.message;
             if (errorMessage.includes("permission_denied")) {
-                 errorMessage = "Permission denied. Check your Firebase Security Rules.";
+                 // **THIS WAS THE ISSUE. The security rules prevented the GET.**
+                 errorMessage = "Login failed. You might not be approved yet, or there is a permission issue.";
             }
             console.error("Student Login Error:", e);
             messageDiv.textContent = `Login failed. Error: ${errorMessage}`;
@@ -399,7 +400,7 @@ async function loadBreakRequestForm(studentId) {
     
     // Populate Duration Select
     for (let i = 1; i <= monthsRemainingInYear; i++) {
-         breakDurationSelect.add(new Option(`${i} month${i > 1 ? 's' : ''}`, i));
+          breakDurationSelect.add(new Option(`${i} month${i > 1 ? 's' : ''}`, i));
     }
 
     breakMessage.textContent = `You can request a break starting from ${startMonth}. Max duration: ${monthsRemainingInYear} month(s).`;

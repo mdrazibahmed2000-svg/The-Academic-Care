@@ -184,32 +184,45 @@ async function handleStudentLogin(studentId) {
     const errorElement = document.getElementById('loginError');
     errorElement.textContent = '';
 
-    // Fetch the student data from the specific student's node.
+    // 1. Fetch the student data
     const studentSnapshot = await get(getStudentRef(studentId));
 
     if (!studentSnapshot.exists()) {
-        // If snapshot.exists() is false, it means the security rules likely denied the read 
-        // because the 'id' field is missing or incorrect in the student's record.
-        errorElement.textContent = `Student ID '${studentId}' not found. If approved, please contact admin to verify the database record.`;
+        // If snapshot.exists() is false, it means the ID is wrong, OR the security rule denied access.
+        errorElement.textContent = `Student ID '${studentId}' not found. Please register or verify the ID.`;
         return;
     }
 
     const data = studentSnapshot.val();
     
+    // 2. Check for pending status
     if (data.status === 'pending') {
         errorElement.textContent = 'Registration pending admin approval.';
         return;
     }
     
-    // CRITICAL CHECK: Ensure the 'id' field inside the fetched data matches the login ID.
-    // This is the client-side validation that was causing the error for approved students 
-    // whose records were missing the 'id' field.
+    // 3. CRITICAL FIX: Prioritize login for approved students by bypassing the strict 'data.id' check.
+    if (data.status === 'approved') {
+        
+        // Ensure currentStudentData is populated using the correct studentId from the path.
+        currentStudentData = { id: studentId, ...data };
+        
+        // PROCEED TO LOGIN
+        localStorage.setItem('appLoginId', studentId);
+        localStorage.setItem('isAdmin', 'false');
+        await initializeStudentPanel(currentStudentData);
+        showDashboard(false);
+        return;
+
+    } 
+    
+    // 4. Fallback check (for corrupted or non-standard statuses)
     if (data.id !== studentId) {
         errorElement.textContent = 'Security check failed. Invalid login data (mismatched ID field in database record).';
         return;
     }
 
-    // Login successful
+    // Default successful login path (for other valid future statuses)
     currentStudentData = { id: studentId, ...data };
     localStorage.setItem('appLoginId', studentId);
     localStorage.setItem('isAdmin', 'false');

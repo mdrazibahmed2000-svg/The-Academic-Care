@@ -8,6 +8,7 @@ import { getDatabase, ref, get, set, remove, update, onValue, query, orderByChil
 
 // ====================================================================
 // --- Global Firebase and App Configuration (USING YOUR PROVIDED VALUES) ---
+// NOTE: Ensure these values are correct for your Firebase project.
 // ====================================================================
 
 const firebaseConfig = {
@@ -40,12 +41,10 @@ async function initializeAppAndAuth() {
         // Set persistence before attempting any auth calls
         await setPersistence(auth, browserSessionPersistence);
         
-        // --- CRITICAL FIX FOR ADMIN TOKEN: Prevents anonymous override ---
-        // Only sign in anonymously IF no user is currently active (i.e., not a logged-in Admin).
+        // CRITICAL FIX: Only sign in anonymously IF no user is currently active (prevents password token override)
         if (!auth.currentUser) {
             await signInAnonymously(auth); 
         }
-        // -----------------------------------------------------------------
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -53,7 +52,6 @@ async function initializeAppAndAuth() {
                 const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
 
                 currentUserId = user.uid;
-                // Update the display to confirm the session type
                 document.getElementById('authUserId').textContent = `Auth User ID: ${currentUserId} (${isPasswordUser ? 'Password' : 'Anonymous'})`; 
                 
                 checkLoginStatus();
@@ -352,16 +350,18 @@ window.approveStudent = async function (studentId) {
     }
 }
 
-// CRITICAL FIX: Robust permission check and error handling for Admin writes
+// Helper function to check for Admin write permission
+function checkAdminWritePermission() {
+    return auth.currentUser && 
+           localStorage.getItem('isAdmin') === 'true' && 
+           auth.currentUser.providerData.some(p => p.providerId === 'password');
+}
+
+// CRITICAL: Function to mark a month as PAID
 window.markPaid = async function (studentId, monthKey, method) {
     const feeRef = ref(getFeesRef(studentId), monthKey);
     
-    // Explicitly check if the user is authenticated as an Admin with a password token
-    const isAdminAuth = auth.currentUser && 
-                        localStorage.getItem('isAdmin') === 'true' && 
-                        auth.currentUser.providerData.some(p => p.providerId === 'password');
-
-    if (!isAdminAuth) {
+    if (!checkAdminWritePermission()) {
         alert("PERMISSION DENIED: Fee mark failed. You must be logged in as an Admin using the email/password to update fee records.");
         return;
     }
@@ -374,13 +374,42 @@ window.markPaid = async function (studentId, monthKey, method) {
             recordedBy: auth.currentUser.uid 
         });
         
-        // Success: The onValue listener will automatically refresh the UI.
         alert(`Successfully marked ${monthKey} for student ${studentId} as paid via ${method}.`);
         
     } catch (e) {
         console.error("Error recording payment:", e);
-        // Better error message to guide admin to check rules
         alert(`DATABASE WRITE ERROR: Failed to record payment for ${monthKey}. Check Firebase Security Rules or internet connection. Error: ${e.message}`);
+    }
+}
+
+// NEW: Function to mark a month as BREAK
+window.markBreak = async function (studentId, monthKey) {
+    const feeRef = ref(getFeesRef(studentId), monthKey);
+    
+    if (!checkAdminWritePermission()) {
+        alert("PERMISSION DENIED: Break mark failed. You must be logged in as an Admin using the email/password.");
+        return;
+    }
+
+    try {
+        await set(feeRef, {
+            status: 'break',
+            recordedBy: auth.currentUser.uid,
+            breakDate: Date.now()
+        });
+        
+        // After setting break, check if there was a pending request and remove it
+        const breakReqRef = getBreakRequestRef(studentId);
+        const snapshot = await get(breakReqRef);
+        if (snapshot.exists() && snapshot.val().requestedForMonth === monthKey) {
+            await remove(breakReqRef);
+        }
+        
+        alert(`Successfully marked ${monthKey} for student ${studentId} as a BREAK month.`);
+        
+    } catch (e) {
+        console.error("Error recording break status:", e);
+        alert(`DATABASE WRITE ERROR: Failed to record break status for ${monthKey}. Error: ${e.message}`);
     }
 }
 
@@ -412,16 +441,11 @@ window.loadMonthlyFees = function () {
     });
 };
 
-window.approveBreak = async function(studentId) {
-    if (!confirm(`Confirm approval of break request for ${studentId}?`)) return;
+window.approveBreak = async function(studentId, monthKey) {
+    if (!confirm(`Confirm approval of break request for ${studentId} for the requested month?`)) return;
 
-    try {
-        await remove(getBreakRequestRef(studentId));
-        alert(`Break request for ${studentId} approved and removed from the list.`);
-    } catch (e) {
-        console.error("Error approving break:", e);
-        alert(`ERROR: Failed to approve break. Details: ${e.message}`);
-    }
+    // Approve break by marking the month as 'break'. This also removes the request record.
+    await markBreak(studentId, monthKey);
 }
 
 // ====================================================================
@@ -480,97 +504,6 @@ window.requestBreak = async function (studentId) {
 }
 
 // ====================================================================
-// --- Gemini AI Functions (Simulated based on Policy Context) ---
-// ====================================================================
-
-const ACADEMIC_CARE_POLICY = {
-    fee: "BDT 2,000",
-    deadline: "5th day of the current month",
-    late_fee: "BDT 100 (after the 10th)",
-    payment_methods: "Cash (to Admin), Bkash (017-xxxx-xxxx), or Nagad (018-xxxx-xxxx)",
-    break_policy: "Submit a break request before the 25th day of the current month for the next month. Admin approval required.",
-    year: "2024"
-};
-
-window.handleStudentQuery = async function() {
-    const query = document.getElementById('geminiQuery').value.toLowerCase().trim();
-    const responseElement = document.getElementById('geminiResponse');
-    const loader = document.getElementById('geminiLoader');
-    
-    if (!query) {
-        responseElement.textContent = "Please enter a question to ask the assistant.";
-        return;
-    }
-
-    loader.classList.remove('hidden');
-    responseElement.textContent = "Analyzing query...";
-
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    let response = "I'm sorry, I couldn't find a specific answer for that. Please try asking about **fees**, **payment methods**, **deadlines**, or the **break policy**.";
-
-    if (query.includes('fee') || query.includes('amount') || query.includes('cost')) {
-        response = `The standard monthly tuition fee is **${ACADEMIC_CARE_POLICY.fee}**. Fees are due by the **${ACADEMIC_CARE_POLICY.deadline}**.`;
-    } else if (query.includes('payment') || query.includes('pay') || query.includes('method')) {
-        response = `You can pay using **${ACADEMIC_CARE_POLICY.payment_methods}**. Please ensure you get a confirmation receipt from the Admin for Cash payments.`;
-    } else if (query.includes('break') || query.includes('stop') || query.includes('leave')) {
-        response = `Our **break policy** states you must submit a **Break Request** through the portal *before* the **25th day of the current month** to take a break in the *following* month. Admin approval is mandatory.`;
-    } else if (query.includes('status') && currentStudentData) {
-        const fees = currentStudentData.fees || {};
-        const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid')
-                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
-        
-        if (unpaidMonths.length > 0) {
-            response = `Your current status is **${currentStudentData.status}**. You appear to have unpaid fees for: **${unpaidMonths.join(', ')}**. Please prioritize settling these.`;
-        } else {
-            response = `Your current status is **${currentStudentData.status}**. Great news! Your fee record seems up-to-date for the currently tracked months.`;
-        }
-    }
-    
-    responseElement.innerHTML = response;
-    loader.classList.add('hidden');
-}
-
-window.draftCommunication = async function(studentId) {
-    const student = allApprovedStudents.find(s => s.id === studentId);
-    if (!student) return;
-
-    openModal();
-    const draftArea = document.getElementById('draftedCommunication');
-    const loader = document.getElementById('communicationLoader');
-    loader.classList.remove('hidden');
-    draftArea.value = 'Analyzing student data and drafting message...';
-
-    const feeSnapshot = await get(getFeesRef(studentId));
-    const fees = feeSnapshot.val() || {};
-
-    const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid')
-                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
-
-    const breakRequestSnapshot = await get(getBreakRequestRef(studentId));
-    const breakRequest = breakRequestSnapshot.val();
-
-    let message;
-
-    if (unpaidMonths.length > 0) {
-        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
-        message += `This is a friendly reminder from The Academic Care regarding outstanding tuition fees. We show the following months are currently UNPAID: ${unpaidMonths.join(', ')}.\n\n`;
-        message += `Please settle the fee of ${ACADEMIC_CARE_POLICY.fee} per month immediately to avoid disruption. Payment methods: ${ACADEMIC_CARE_POLICY.payment_methods}.\n\n`;
-        message += `Thank you for your cooperation.`;
-    } else {
-        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
-        message += `Thank you for your prompt payment! Our records show the student's fees are completely up-to-date.\n\n`;
-        if (breakRequest) {
-            message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth}. Please review and approve/reject it.\n\n`;
-        }
-        message += `We appreciate your commitment to ${student.name}'s education.`;
-    }
-
-    loader.classList.add('hidden');
-    draftArea.value = message;
-}
-
-// ====================================================================
 // --- Rendering/Utility Functions ---
 // ====================================================================
 
@@ -624,7 +557,7 @@ function renderBreakRequests(requests) {
                 <strong>${req.studentName}</strong> (${req.studentId})<br>
                 <small class="text-indigo-600">Request for: ${req.requestedForMonth.charAt(0).toUpperCase() + req.requestedForMonth.slice(1)}</small>
             </div>
-            <button class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-xs" onclick="approveBreak('${req.studentId}')">
+            <button class="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-xs" onclick="approveBreak('${req.studentId}', '${req.requestedForMonth}')">
                 Approve Break
             </button>
         `;
@@ -659,7 +592,14 @@ function renderFeeStatus(fees, container) {
     const currentMonth = today.toLocaleString('en-us', { month: 'long' }).toLowerCase();
 
     monthKeys.forEach(month => {
-        const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
+        // Determine the status. Default to 'unpaid' if missing.
+        let status = 'unpaid';
+        if (fees[month] && fees[month].status === 'paid') {
+            status = 'paid';
+        } else if (fees[month] && fees[month].status === 'break') {
+            status = 'break'; // New status for break month
+        }
+
         const isCurrentMonth = month === currentMonth;
 
         const li = document.createElement('li');
@@ -682,16 +622,35 @@ function renderAdminFeeManagement(fees, studentId, container) {
     const monthKeys = getMonthKeys();
 
     monthKeys.forEach(month => {
-        const status = fees[month] && fees[month].status === 'paid' ? 'paid' : 'unpaid';
-        const paymentInfo = status === 'paid' ? `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()} via ${fees[month].paymentMethod})` : '';
+        // Determine the status. Default to 'unpaid' if missing.
+        let status = 'unpaid';
+        let paymentInfo = '';
+        
+        if (fees[month] && fees[month].status === 'paid') {
+            status = 'paid';
+            paymentInfo = `(Paid on ${new Date(fees[month].paymentDate).toLocaleDateString()} via ${fees[month].paymentMethod})`;
+        } else if (fees[month] && fees[month].status === 'break') {
+            status = 'break';
+            paymentInfo = `(Marked as Break on ${new Date(fees[month].breakDate).toLocaleDateString()})`;
+        }
+
 
         const li = document.createElement('li');
-        li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm', 'border-l-4', status === 'paid' ? 'border-green-500' : 'border-red-500');
+        // Use different border colors for different statuses
+        let borderColor = 'border-red-500'; // unpaid
+        if (status === 'paid') borderColor = 'border-green-500';
+        if (status === 'break') borderColor = 'border-blue-500';
+        
+        li.classList.add('bg-white', 'p-3', 'mb-2', 'rounded', 'shadow-sm', 'border-l-4', borderColor);
+        
         li.innerHTML = `
             <div class="font-bold text-lg">${month.charAt(0).toUpperCase() + month.slice(1)}: <span class="status-${status}">${status.toUpperCase()}</span></div>
             <small class="text-gray-500">${paymentInfo}</small>
             <div class="mt-2 space-x-2">
-                ${status === 'unpaid' ? `<button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>` : ''}
+                ${status === 'unpaid' ? `
+                    <button class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded text-sm" onclick="openPaymentModal('${studentId}', '${month}')">Mark Paid</button>
+                    <button class="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded text-sm" onclick="markBreak('${studentId}', '${month}')">Mark Break</button>
+                ` : ''}
             </div>
         `;
         container.appendChild(li);
@@ -728,6 +687,97 @@ window.copyToClipboard = function(elementId) {
     element.setSelectionRange(0, 99999); 
     navigator.clipboard.writeText(element.value);
     alert('Message copied to clipboard!');
+}
+
+// ====================================================================
+// --- Gemini AI Functions (Simulated based on Policy Context) ---
+// ====================================================================
+
+const ACADEMIC_CARE_POLICY = {
+    fee: "BDT 2,000",
+    deadline: "5th day of the current month",
+    late_fee: "BDT 100 (after the 10th)",
+    payment_methods: "Cash (to Admin), Bkash (017-xxxx-xxxx), or Nagad (018-xxxx-xxxx)",
+    break_policy: "Submit a break request before the 25th day of the current month for the next month. Admin approval required.",
+    year: "2024"
+};
+
+window.handleStudentQuery = async function() {
+    const query = document.getElementById('geminiQuery').value.toLowerCase().trim();
+    const responseElement = document.getElementById('geminiResponse');
+    const loader = document.getElementById('geminiLoader');
+    
+    if (!query) {
+        responseElement.textContent = "Please enter a question to ask the assistant.";
+        return;
+    }
+
+    loader.classList.remove('hidden');
+    responseElement.textContent = "Analyzing query...";
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    let response = "I'm sorry, I couldn't find a specific answer for that. Please try asking about **fees**, **payment methods**, **deadlines**, or the **break policy**.";
+
+    if (query.includes('fee') || query.includes('amount') || query.includes('cost')) {
+        response = `The standard monthly tuition fee is **${ACADEMIC_CARE_POLICY.fee}**. Fees are due by the **${ACADEMIC_CARE_POLICY.deadline}**.`;
+    } else if (query.includes('payment') || query.includes('pay') || query.includes('method')) {
+        response = `You can pay using **${ACADEMIC_CARE_POLICY.payment_methods}**. Please ensure you get a confirmation receipt from the Admin for Cash payments.`;
+    } else if (query.includes('break') || query.includes('stop') || query.includes('leave')) {
+        response = `Our **break policy** states you must submit a **Break Request** through the portal *before* the **25th day of the current month** to take a break in the *following* month. Admin approval is mandatory.`;
+    } else if (query.includes('status') && currentStudentData) {
+        const fees = currentStudentData.fees || {};
+        const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid' && fees[month]?.status !== 'break')
+                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+        
+        if (unpaidMonths.length > 0) {
+            response = `Your current status is **${currentStudentData.status}**. You appear to have unpaid fees for: **${unpaidMonths.join(', ')}**. Please prioritize settling these.`;
+        } else {
+            response = `Your current status is **${currentStudentData.status}**. Great news! Your fee record seems up-to-date for the currently tracked months.`;
+        }
+    }
+    
+    responseElement.innerHTML = response;
+    loader.classList.add('hidden');
+}
+
+window.draftCommunication = async function(studentId) {
+    const student = allApprovedStudents.find(s => s.id === studentId);
+    if (!student) return;
+
+    openModal();
+    const draftArea = document.getElementById('draftedCommunication');
+    const loader = document.getElementById('communicationLoader');
+    loader.classList.remove('hidden');
+    draftArea.value = 'Analyzing student data and drafting message...';
+
+    const feeSnapshot = await get(getFeesRef(studentId));
+    const fees = feeSnapshot.val() || {};
+
+    const unpaidMonths = getMonthKeys().filter(month => fees[month]?.status !== 'paid' && fees[month]?.status !== 'break')
+                                       .map(m => m.charAt(0).toUpperCase() + m.slice(1));
+
+    const breakRequestSnapshot = await get(getBreakRequestRef(studentId));
+    const breakRequest = breakRequestSnapshot.val();
+
+    let message;
+
+    if (unpaidMonths.length > 0) {
+        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
+        message += `This is a friendly reminder from The Academic Care regarding outstanding tuition fees. We show the following months are currently UNPAID: ${unpaidMonths.join(', ')}.\n\n`;
+        message += `Please settle the fee of ${ACADEMIC_CARE_POLICY.fee} per month immediately to avoid disruption. Payment methods: ${ACADEMIC_CARE_POLICY.payment_methods}.\n\n`;
+        message += `Thank you for your cooperation.`;
+    } else {
+        message = `Dear Guardian of ${student.name} (ID: ${studentId}),\n\n`;
+        message += `Thank you for your prompt payment! Our records show the student's fees are completely up-to-date or marked as break.\n\n`;
+        if (breakRequest) {
+            message += `NOTE: We have a PENDING break request on file for ${breakRequest.requestedForMonth}. Please review and approve/reject it.\n\n`;
+        }
+        message += `We appreciate your commitment to ${student.name}'s education.`;
+    }
+
+    loader.classList.add('hidden');
+    draftArea.value = message;
 }
 
 window.onload = initializeAppAndAuth;
